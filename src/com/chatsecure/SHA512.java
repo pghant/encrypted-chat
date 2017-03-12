@@ -17,4 +17,8 @@ public class SHA512 {
             return null;
         }
     }
+
+    public static byte[] newHash(byte[] toHash) {
+        return null;
+    }
 }
