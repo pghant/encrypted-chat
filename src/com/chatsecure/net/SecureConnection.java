@@ -123,10 +123,10 @@ public class SecureConnection{
 
 
         //P2Pcoordinator encrypts shared secret and sends it back here;
-        //readAllBytes is going to read in the encrypted share secret
+        //consumeAllBytesFromInputStream is going to read in the encrypted share secret
 
 
-        encrypted_shared_secret = readAllBytes( );
+        encrypted_shared_secret = consumeAllBytesFromInputStream( );
 
         //here the com.chatsecure.client is using his private RSA key to decrypt this message--that key should exist
         //within RSA object
@@ -178,7 +178,7 @@ public class SecureConnection{
      *
      * @throws IOException
      */
-    private static byte[] readAllBytes( ) throws IOException{
+    private static byte[] consumeAllBytesFromInputStream( ) throws IOException{
         ArrayList<Byte> byte_array = new ArrayList<>( );
 
         do{
@@ -208,7 +208,7 @@ public class SecureConnection{
     public static Message readMessage( ) throws IOException, ClassNotFoundException{
 
 
-        byte[] encrypted_msg_bytes = readAllBytes( );
+        byte[] encrypted_msg_bytes = consumeAllBytesFromInputStream( );
         byte[] decrypted_msg_bytes;
 
 
