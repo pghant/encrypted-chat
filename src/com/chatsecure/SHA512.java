@@ -77,7 +77,7 @@ public class SHA512 {
         for (int j = 0; j < messageLength; j++) {
             chunkedMessage[j / 64][j % 64] = message[j];
         }
-
+        printByteArray(chunkedMessage, "chunked message");
 
 
 
@@ -96,7 +96,13 @@ public class SHA512 {
     private static void printByteArray(byte[][] array, String title) {
         System.out.println();
         if (title != null && title != "")
-            System.out.print(title + ": ");
-        
+            System.out.println(title + ": ");
+        for (int i = 0; i < array.length; i++) {
+            System.out.print(i + ": ");
+            for (int j = 0; j < array[i].length; j++) {
+                System.out.print(array[i][j] + ", ");
+            }
+            System.out.println();
+        }
     }
 }

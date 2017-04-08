@@ -13,7 +13,7 @@ public class Main {
 
     public static void main(String[] args) {
         int L = 174; // bytes
-        String toHash = "this is a test messagethis is a test message";
+        String toHash = "this is a test messagethis is a test messagethis is a test messagethis is a test messagethis is a test message";
         SHA512.hash256(toHash.getBytes());
     }
 }
