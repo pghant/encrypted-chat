@@ -1,5 +1,7 @@
 package com.chatsecure;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -19,6 +21,7 @@ public class SHA512 {
     }
 
     public static byte[] hash256(byte[] toHash) {
+        printByteArray(toHash, "toHash");
         // initialize hash values
         // (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19):
         int h0 = 0x6a09e667;
@@ -42,28 +45,58 @@ public class SHA512 {
             0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
             0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 
-        // message needs to be multiple of 512 bits long (i.e. multiple of 64 bytes long)
-        // first append new byte 0x80 to message
-        // next append enough 0 bytes such that length + 8 is divisible by 64
-        // next append L as 8 bytes
+        /*
+        Message Preprocessing:
+        message needs to be multiple of 512 bits long (i.e. multiple of 64 bytes long)
+        first append new byte 0x80 to message
+        next append enough 0 bytes such that length + 8 is divisible by 64
+        next append L as 8 bytes
+         */
 
         // length of original message
-        int length = toHash.length;
-        int originalBitLength = toHash.length * Byte.SIZE;
-        int KtoAppend = (int)Math.ceil((length + 9.0) / 64) * 64 - (length + 9); // append these many 0 bytes after appending 0x80 byte
-        int messageLength = length + 9 + KtoAppend;
-        byte[] message = new byte[messageLength];
+        long length = toHash.length;
+        long KtoAppend = (int)Math.ceil((length + 9.0) / 64) * 64 - (length + 9); // append these many 0 bytes after appending 0x80 byte
+        long messageLength = length + 9 + KtoAppend;
+        byte[] message = new byte[(int)messageLength]; // new message that can be split into 64 byte chunks
+        // convert length of original message to byte[]
+        byte[] lengthInBytes = ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putLong(length).array();
         int i;
         for (i = 0; i < length; i++) {
             message[i] = toHash[i];
         }
         message[i] = (byte) 0x80;
-        i++;
-        i += KtoAppend;
+        i += KtoAppend + 1;
+        for (int j = 0; j < 8; j++) {
+            message[i] = lengthInBytes[j];
+            i++;
+        }
+        printByteArray(message, "padded message");
+
+        // break message into 512 bit (64 byte) chunks
+        byte[][] chunkedMessage = new byte[(int)messageLength / 64][64];
+        for (int j = 0; j < messageLength; j++) {
+            chunkedMessage[j / 64][j % 64] = message[j];
+        }
 
 
 
 
         return null;
+    }
+
+    private static void printByteArray(byte[] array, String title) {
+        System.out.println();
+        if (title != null && title != "")
+            System.out.print(title + ": ");
+        for (int i = 0; i < array.length; i++) {
+            System.out.print(array[i] + ", ");
+        }
+    }
+
+    private static void printByteArray(byte[][] array, String title) {
+        System.out.println();
+        if (title != null && title != "")
+            System.out.print(title + ": ");
+        
     }
 }
