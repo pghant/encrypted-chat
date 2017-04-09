@@ -7,6 +7,7 @@ import java.security.NoSuchAlgorithmException;
 
 /**
  * Contains logic to perform a SHA-512 hash on a byte[]
+ * Using pseudocode from Wikipedia (https://en.wikipedia.org/wiki/SHA-2)
  */
 public class SHA512 {
     // This is a temporary method to return a SHA-512 hash using builtin Java methods
@@ -21,7 +22,6 @@ public class SHA512 {
     }
 
     public static byte[] hash256(byte[] toHash) {
-        printByteArray(toHash, "toHash");
         // initialize hash values
         // (first 32 bits of the fractional parts of the square roots of the first 8 primes 2..19):
         int h0 = 0x6a09e667;
@@ -70,7 +70,6 @@ public class SHA512 {
             message[i] = lengthInBytes[j];
             i++;
         }
-        printByteArray(message, "padded message");
 
         // break message into 512 bit (64 byte) chunks
         byte[][] chunkedMessage = new byte[(int)messageLength / 64][64];
@@ -78,6 +77,44 @@ public class SHA512 {
             chunkedMessage[j / 64][j % 64] = message[j];
         }
         printByteArray(chunkedMessage, "chunked message");
+
+        // process each message chunk
+        for (byte[] chunk : chunkedMessage) {
+            int[] w = new int[64]; // 64-entry message schedule array w[0..63] of 32 bit (4 byte = 1 int) words
+
+            // copy chunk into first 16 words of w
+            int chunkIndex = 0;
+            for (int j = 0; j < 16; j++) {
+                ByteBuffer buffer = ByteBuffer.allocate(32).order(ByteOrder.BIG_ENDIAN);
+                for (int l = 0; l < 4; l++) {
+                    buffer.put(chunk[chunkIndex]);
+                    chunkIndex++;
+                }
+                w[j] = buffer.getInt(0);
+            }
+
+            // Extend the first 16 words into the remaining 48 words w[16..63] of the message schedule array
+            for (int j = 16; j <= 63; j++) {
+                int s0 = Integer.rotateRight(w[j-15], 7) ^ Integer.rotateRight(w[j-15], 18) ^ (w[j-15] >>> 3);
+                int s1 = Integer.rotateRight(w[j-2], 17) ^ Integer.rotateRight(w[j-2], 19) ^ (w[j-2] >>> 10);
+                w[j] = w[j-16] + s0 + w[j-7] + s1;
+            }
+
+            // Initialize working variables to current hash value
+            int a = h0;
+            int b = h1;
+            int c = h2;
+            int d = h3;
+            int e = h4;
+            int f = h5;
+            int g = h6;
+            int h = h7;
+
+            // Compression function main loop
+            for (int j = 0; j < 64; j++) {
+
+            }
+        }
 
 
 
