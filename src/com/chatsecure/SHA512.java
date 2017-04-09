@@ -13,7 +13,7 @@ public class SHA512 {
     // This is a temporary method to return a SHA-512 hash using builtin Java methods
     public static byte[] hash(byte[] toHash) {
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-512");
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
             return md.digest(toHash);
         } catch(NoSuchAlgorithmException e) {
             System.out.println("No such algorithm");
@@ -76,7 +76,6 @@ public class SHA512 {
         for (int j = 0; j < messageLength; j++) {
             chunkedMessage[j / 64][j % 64] = message[j];
         }
-        printByteArray(chunkedMessage, "chunked message");
 
         // process each message chunk
         for (byte[] chunk : chunkedMessage) {
@@ -85,7 +84,7 @@ public class SHA512 {
             // copy chunk into first 16 words of w
             int chunkIndex = 0;
             for (int j = 0; j < 16; j++) {
-                ByteBuffer buffer = ByteBuffer.allocate(32).order(ByteOrder.BIG_ENDIAN);
+                ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.BIG_ENDIAN);
                 for (int l = 0; l < 4; l++) {
                     buffer.put(chunk[chunkIndex]);
                     chunkIndex++;
@@ -112,13 +111,39 @@ public class SHA512 {
 
             // Compression function main loop
             for (int j = 0; j < 64; j++) {
+                int S1 = Integer.rotateRight(e, 6) ^ Integer.rotateRight(e, 11) ^ Integer.rotateRight(e, 25);
+                int ch = (e & f) ^ ((~e) & g);
+                int temp1 = h + S1 + ch + k[j] + w[j];
+                int S0 = Integer.rotateRight(a, 2) ^ Integer.rotateRight(a, 13) ^ Integer.rotateRight(a, 22);
+                int maj = (a & b) ^ (a & c) ^ (b & c);
+                int temp2 = S0 + maj;
 
+                h = g;
+                g = f;
+                f = e;
+                e = d + temp1;
+                d = c;
+                c = b;
+                b = a;
+                a = temp1 + temp2;
             }
+
+            // Add compressed chunk to current hash value
+            h0 = h0 + a;
+            h1 = h1 + b;
+            h2 = h2 + c;
+            h3 = h3 + d;
+            h4 = h4 + e;
+            h5 = h5 + f;
+            h6 = h6 + g;
+            h7 = h7 + h;
         }
 
-
-
-        return null;
+        // Final hash value
+        return ByteBuffer.allocate(32).order(ByteOrder.BIG_ENDIAN)
+                .putInt(h0).putInt(h1).putInt(h2).putInt(h3)
+                .putInt(h4).putInt(h5).putInt(h6).putInt(h7)
+                .array();
     }
 
     private static void printByteArray(byte[] array, String title) {
