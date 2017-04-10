@@ -1,6 +1,6 @@
-package com.chatsecure.aes.main;
+package com.chatsecure.aes;
 
-import com.chatsecure.aes.utilities.*;
+import com.chatsecure.aes.*;
 
 public class ShiftRows {
 	

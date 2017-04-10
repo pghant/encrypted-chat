@@ -1,4 +1,4 @@
-package com.chatsecure.aes.utilities;
+package com.chatsecure.aes;
 
 public class Common {
 

@@ -1,4 +1,4 @@
-package com.chatsecure.aes.main;
+package com.chatsecure.aes;
 
 import java.math.BigInteger;
 
