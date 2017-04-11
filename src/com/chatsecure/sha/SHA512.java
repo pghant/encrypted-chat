@@ -1,4 +1,4 @@
-package com.chatsecure;
+package com.chatsecure.sha;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
