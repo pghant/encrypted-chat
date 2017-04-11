@@ -13,7 +13,7 @@ public class SHA512 {
     // This is a temporary method to return a SHA-512 hash using builtin Java methods
     public static byte[] hash(byte[] toHash) {
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            MessageDigest md = MessageDigest.getInstance("SHA-512");
             return md.digest(toHash);
         } catch(NoSuchAlgorithmException e) {
             System.out.println("No such algorithm");
