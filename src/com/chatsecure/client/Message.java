@@ -10,7 +10,7 @@ public class Message implements Serializable{
 
     final private User user;
     final private String content;
-    final private MessageType type;
+    private MessageType type;
     private ArrayList<User> userList = null;
     private Status status = null;
 
@@ -34,6 +34,7 @@ public class Message implements Serializable{
     }
 
 
+
     public User getUser( ){
         return user;
     }
@@ -45,6 +46,12 @@ public class Message implements Serializable{
     public MessageType getType( ){
         return type;
     }
+
+    public Message setType(MessageType type ){
+        this.type=type;
+        return this;
+    }
+
 
     public ArrayList<User> getUserList( ){
         return userList;

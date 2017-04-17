@@ -13,6 +13,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,7 +30,7 @@ import java.util.logging.Logger;
 public class SecureConnection
 {
 
-    private static P2Pcoordinator coordinator = null;
+    private static Thread coordinator = null;
     private static String hostAddr;
     private static Integer portNum;
     private static Socket userSocket = null;
@@ -101,7 +102,8 @@ public class SecureConnection
 
             random.nextBytes( SHARED_KEY );
 
-            coordinator = new P2Pcoordinator( );
+            coordinator = new Thread( new P2Pcoordinator( ) );
+            coordinator.start();
 
         } else{
 
@@ -319,7 +321,7 @@ public class SecureConnection
     }
 
 
-    private static class P2Pcoordinator
+    private static class P2Pcoordinator implements Runnable
     {
 
 
@@ -327,6 +329,8 @@ public class SecureConnection
         final AtomicBoolean continue_coordinating = new AtomicBoolean( true );
         final ConcurrentHashMap<Long, User> online_users;
         final User ControllerUser;
+        final ArrayBlockingQueue<Message> outgoingMessages;
+
 
         Thread P2Plistener_thread;
 
@@ -335,21 +339,24 @@ public class SecureConnection
             P2Plistener_thread.start( );
 
             online_users = new ConcurrentHashMap<>( );
-            ControllerUser = new User( "P2PController" );
+            ControllerUser = new User( "P2PController", Status.CONTROLLER );
 
             //add connection to user that is P2P coordinator
             online_users.put( Thread.currentThread( ).getId( ), user );
             host_connections.put( Thread.currentThread( ).getId( ), userSocket );
 
+            int queueCapacity=100;
+            outgoingMessages = new ArrayBlockingQueue<Message>( queueCapacity);
+
         }
 
         void closeConnection( Long threadID ){
 
-            host_connections.forEach( ( ID, socket1 ) -> {
+            host_connections.forEach( ( ID, socketConn ) -> {
 
                 if ( ID.equals( threadID ) || ( threadID == null ) ){
                     try{
-                        socket1.close( );
+                        socketConn.close( );
                     } catch ( IOException e ){
                         Logger.getLogger( P2Plistener.class.toString( ) ).log( Level.SEVERE,
                                                                                "Socket close failed in P2Plistner" );
@@ -369,6 +376,43 @@ public class SecureConnection
             } else{
                 online_users.remove( threadID );
                 host_connections.remove( threadID );
+            }
+        }
+
+
+
+        @Override
+        public void run( ){
+            while ( continue_coordinating.get( ) ){
+
+                Message msg = null;
+                try{
+                    msg = outgoingMessages.take( );
+                } catch ( InterruptedException e ){
+                    Logger.getLogger( P2Plistener.class.toString( ) ).log( Level.SEVERE,
+                                                                           "Server Socket failed in P2Plistner" );
+
+                }
+
+                final Message finalMsg = msg;
+                host_connections.forEach( ( ID, socketConn ) -> {
+                    if ( online_users.get( ID ) != finalMsg.getUser( ) ){
+
+                        try{
+                            writeMessage( finalMsg, new ObjectOutputStream( socketConn.getOutputStream( ) ) );
+                        } catch ( IOException e ){
+                            Logger.getLogger( this.getClass( ).toString( ) ).log( Level.SEVERE,
+                                                                                  "A broadcast message failed to send",
+                                                                                  e );
+
+                        }
+                        if ( finalMsg.getType( ) == MessageType.REMOVEUSER ){
+                            closeConnection( ID );
+                        }
+                    }
+                } );
+
+
             }
         }
 
@@ -427,11 +471,15 @@ public class SecureConnection
             final Socket connected_sock;
             Boolean handshakeDone = false;
 
-            public P2Phandler( Socket connected_sock ){
+            P2Phandler( Socket connected_sock ){
                 this.connected_sock = connected_sock;
                 host_connections.put( Thread.currentThread( ).getId( ), connected_sock );
 
+
+
             }
+
+
 
             @Override
             public void run( ){
@@ -468,6 +516,10 @@ public class SecureConnection
                                                           byteToString( encryptedSharedSecret ) ) );
 
 
+                            outgoingMessages.put( msg.setType( MessageType.ADDUSER )
+                                                          .setUserList( new ArrayList<>( online_users.values( ) ) ) );
+
+
                             handshakeDone = true;
 
                         } else{
@@ -476,13 +528,18 @@ public class SecureConnection
 
                             switch ( msg.getType( ) ){
 
-                                case USER:
-                                    break;
+
                                 case STATUS:
-                                    break;
 
-
+                                    //fall through
                                 case REMOVEUSER:
+
+                                    online_users.remove( Thread.currentThread( ).getId( ) );
+
+                                    //fall through
+                                case USER:
+                                    msg.setUserList( new ArrayList<>( online_users.values( ) ) );
+                                    outgoingMessages.put( msg );
                                     break;
 
                             }
@@ -491,7 +548,7 @@ public class SecureConnection
 
                     }
 
-                } catch ( IOException | ClassNotFoundException e ){
+                } catch ( IOException | ClassNotFoundException | InterruptedException e ){
                     Logger.getLogger( this.getClass( ).toString( ) ).log( Level.SEVERE,
                                                                           "Stream created failed in P2Phandler", e );
 

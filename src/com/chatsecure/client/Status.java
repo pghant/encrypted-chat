@@ -7,5 +7,5 @@ import java.io.Serializable;
  */
 public enum Status implements Serializable
 {
-    AWAY,ONLINE
+    AWAY,ONLINE,CONTROLLER
 }
