@@ -1,9 +1,9 @@
-package com.chatsecure;
+package com.chatsecure.sha;
 
-import com.chatsecure.sha.SHA512;
-
-public class Main {
-
+/**
+ * Created by prasant on 4/10/17.
+ */
+public class TestSHA {
     public static void hashStringBuiltIn(String toHash) {
         byte[] bytes = SHA512.hash(toHash.getBytes());
         StringBuilder sb = new StringBuilder();
