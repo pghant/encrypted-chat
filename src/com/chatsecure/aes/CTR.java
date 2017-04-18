@@ -1,7 +1,10 @@
 package com.chatsecure.aes;
-import com.chatsecure.*;
+
+import com.chatsecure.sha.SHA512;
+
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Random;
 
 public class CTR {
 	private int messageId = 0;
@@ -52,8 +55,8 @@ public class CTR {
 	    System.arraycopy(hash, 0, encMsg, 32+alignedLength, hash.length);
 
 	    //add HASH to end of message
-	    hash = SHA512.hash(msg_);
-	    System.arraycopy(hash, 0, encMsg, encMsg.length - hash.length, hash.length);
+        hash = SHA512.hash( msg_ );
+        System.arraycopy(hash, 0, encMsg, encMsg.length - hash.length, hash.length);
 		//start encrypting the IV and xoring it with the buffer
 		for(int iter = 0; iter < alignedLength + hash.length; iter+=16){
 			encIV = ECB.encrypt(randIV);
