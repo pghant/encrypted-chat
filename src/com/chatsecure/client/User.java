@@ -16,8 +16,9 @@ public class User implements Serializable{
         this.status = status;
     }
 
-    public void setStatus( final Status status ){
+    public User setStatus( final Status status ){
         this.status = status;
+        return this;
     }
 
     public String getName( ){

@@ -37,7 +37,7 @@ public class SecureConnection
     private static ObjectOutputStream stream_to_P2Pcoord;
     private static ObjectInputStream stream_from_P2Pcoord;
     private static User user;
-    private static SecureConnection theInstance = new SecureConnection( );
+    private static final SecureConnection theInstance = new SecureConnection( );
 
 
 
@@ -69,6 +69,7 @@ public class SecureConnection
         assert becomeP2Pcoordinator : "Initialized SecureConnection without host address and becomeP2P is false";
 
         initalize(InetAddress.getLocalHost().toString(),user,port_num,true);
+
 
     }
 
@@ -102,7 +103,8 @@ public class SecureConnection
 
             random.nextBytes( SHARED_KEY );
 
-            coordinator = new Thread( new P2Pcoordinator( ) );
+            Long myID = Thread.currentThread( ).getId( );
+            coordinator = new Thread( new P2Pcoordinator(myID ) );
             coordinator.start();
 
         } else{
@@ -132,7 +134,7 @@ public class SecureConnection
         return new String( b, Charset.forName( "US-ASCII" ) );
     }
 
-    public static void doHandShake( ) throws IOException, ClassNotFoundException{
+    private static void doHandShake( ) throws IOException, ClassNotFoundException{
         byte[] pubkey;
 
         byte[] shared_secret;
@@ -230,7 +232,7 @@ public class SecureConnection
      * this is needed because calls to ObjectInputStream.read will block until data shows up and so there is
      * no way to know number of bytes in stream before blocking
      *
-     * @return
+     * @return byte[]
      *
      * @throws IOException
      */
@@ -315,9 +317,9 @@ public class SecureConnection
 
         writeMessage( new Message( MessageType.REMOVEUSER,user,null ) );
 
-//        if( coordinator != null){
-//            coordinator.closeConnection( null );
-//        }
+        if( coordinator != null){
+           //if coordinator closes connection then need to migrate coordinator
+        }
     }
 
 
@@ -334,7 +336,7 @@ public class SecureConnection
 
         Thread P2Plistener_thread;
 
-        P2Pcoordinator( ) throws IOException{
+        P2Pcoordinator(Long userID ) throws IOException{
             P2Plistener_thread = new Thread( new P2Plistener( ) );
             P2Plistener_thread.start( );
 
@@ -342,11 +344,11 @@ public class SecureConnection
             ControllerUser = new User( "P2PController", Status.CONTROLLER );
 
             //add connection to user that is P2P coordinator
-            online_users.put( Thread.currentThread( ).getId( ), user );
-            host_connections.put( Thread.currentThread( ).getId( ), userSocket );
+            online_users.put( userID, user );
+            host_connections.put( userID, userSocket );
 
             int queueCapacity=100;
-            outgoingMessages = new ArrayBlockingQueue<Message>( queueCapacity);
+            outgoingMessages = new ArrayBlockingQueue<>( queueCapacity );
 
         }
 
@@ -394,21 +396,29 @@ public class SecureConnection
 
                 }
 
+
+
                 final Message finalMsg = msg;
                 host_connections.forEach( ( ID, socketConn ) -> {
-                    if ( online_users.get( ID ) != finalMsg.getUser( ) ){
+                    if ( finalMsg != null ){
+                        if ( online_users.get( ID ) != finalMsg.getUser( ) ){
 
-                        try{
-                            writeMessage( finalMsg, new ObjectOutputStream( socketConn.getOutputStream( ) ) );
-                        } catch ( IOException e ){
-                            Logger.getLogger( this.getClass( ).toString( ) ).log( Level.SEVERE,
-                                                                                  "A broadcast message failed to send",
-                                                                                  e );
+                            try{
+                                writeMessage( finalMsg, new ObjectOutputStream( socketConn.getOutputStream( ) ) );
+                            } catch ( IOException e ){
+                                Logger.getLogger( this.getClass( ).toString( ) ).log( Level.SEVERE,
+                                                                                      "A broadcast message failed to send",
+                                                                                      e );
 
+                            }
+                            if ( finalMsg.getType( ) == MessageType.REMOVEUSER ){
+                                closeConnection( ID );
+                            }
                         }
-                        if ( finalMsg.getType( ) == MessageType.REMOVEUSER ){
-                            closeConnection( ID );
-                        }
+                    }else{
+                        Logger.getLogger( this.getClass( ).toString( ) ).log( Level.WARNING,
+                                                                                      "Message extracted from outgoing message" +
+                                                                                      "queue was null" );
                     }
                 } );
 
@@ -424,7 +434,7 @@ public class SecureConnection
 
             final static int BACKLOG = 10;
 
-            public P2Plistener( ) throws IOException{
+            P2Plistener( ) throws IOException{
 
                 try{
                     listening_sock = new ServerSocket( SecureConnection.portNum, BACKLOG );
@@ -434,7 +444,7 @@ public class SecureConnection
                     throw e;
                 }
 
-                threadList = new ArrayList<Thread>();
+                threadList = new ArrayList<>( );
             }
 
             @Override
@@ -492,6 +502,12 @@ public class SecureConnection
 
                         if ( !handshakeDone ){
 
+                            //handshake message is first message sent upon connection
+                            //and is not encrypted yet because encryption depends
+                            //on handshake--so just use readObject to extract Message
+                            //containing users public key, then encrypt the shared
+                            //secret AES128 bit key via RSAencrypt then send back to user;
+                            //now all further communication will be encrypted via AES
                             msg = (Message) iis.readObject( );
 
                             assert msg.getType( ) == MessageType.HANDSHAKE :
@@ -530,19 +546,21 @@ public class SecureConnection
 
 
                                 case STATUS:
+                                    online_users.put(Thread.currentThread().getId(),
+                                                     msg.getUser().setStatus( msg.getStatus() ));
+                                    break;
 
-                                    //fall through
                                 case REMOVEUSER:
-
                                     online_users.remove( Thread.currentThread( ).getId( ) );
+                                    break;
 
-                                    //fall through
                                 case USER:
                                     msg.setUserList( new ArrayList<>( online_users.values( ) ) );
-                                    outgoingMessages.put( msg );
                                     break;
 
                             }
+                            outgoingMessages.put( msg );
+
                         }
 
 
