@@ -1,5 +1,7 @@
 package com.chatsecure.aes;
 import com.chatsecure.*;
+import com.chatsecure.sha.SHA512;
+
 import java.nio.ByteBuffer;
 import java.util.*;
 
