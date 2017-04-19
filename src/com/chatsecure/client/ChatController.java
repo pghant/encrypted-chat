@@ -26,6 +26,8 @@ public class ChatController{
 
     private final ObservableList<Message> messages = FXCollections.observableArrayList(  );
 
+    private final ObservableList<User> onlineUsers = FXCollections.observableArrayList( );
+
     @FXML public void initialize(){
 
 
@@ -51,6 +53,10 @@ public class ChatController{
 
         hbox_bottom.widthProperty().addListener( ( observable, oldValue, newValue ) ->
                             msgTextArea.setPrefWidth( (double)newValue ));
+
+        hbox_bottom.heightProperty().addListener( ( observableValue, number, t1 ) -> {
+            msgTextArea.setPrefHeight( (double)t1 );
+        } );
 
 
 
