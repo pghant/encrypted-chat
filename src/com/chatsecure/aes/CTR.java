@@ -4,15 +4,15 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 public class CTR {
-	private int messageId = 0;
-	private int block_size = 16;
-	private int hash_size = 64;
-	private byte[] buffer;
-	private byte[] aes_key;
+	private static int messageId = 0;
+	private static int block_size = 16;
+	private static int hash_size = 64;
+	private static byte[] aes_key;
 	//save the key that will be used to encrypt the message
-	public boolean setkey(byte[] key_) throws Exception{
-		if(key_.length == 32 || key_.length == 64){
-			System.arraycopy(key_, 0, aes_key, 0, key_.length);
+	public static boolean setkey(byte[] key_) throws Exception{
+		if(key_.length == 16 || key_.length == 32){
+			aes_key = new byte[key_.length];
+
 			if(!ECB.setKey(key_)){
 					return false;
 			}
@@ -22,7 +22,7 @@ public class CTR {
 		}
 	}
 	
-	public byte[] encryptMessage(byte[] msg_) throws Exception{
+	public static byte[] encryptMessage(byte[] msg_) throws Exception{
 		Random random = new Random();
 		byte[] hash = new byte[hash_size];
 		byte[] randIV = new byte[block_size];
@@ -36,13 +36,17 @@ public class CTR {
 	    ByteBuffer bb = ByteBuffer.allocate(4);
 	    //copy the plaintext IV
 	    bb.putInt(IV);
+	    System.out.println("Encrypt:");
+	    System.out.println(Arrays.toString(msg_));
 	    System.arraycopy( bb.array(), 0, randIV, 12, bb.array().length );
 	    System.arraycopy( randIV, 0, encMsg, 0, randIV.length );
 	    //copy the random bytes at the start of the encryption section of the buffer
 	    System.arraycopy( rand, 0, encMsg, block_size, rand.length );
+	    bb.clear();
 	    bb.putInt(msg_.length);
 	    //this copies the length into the first part of the encryption
 	    System.arraycopy( bb.array(), 0, encMsg, 24, bb.array().length );
+	    bb.clear();
 	    bb.putInt(messageId);
 	    System.arraycopy(bb.array(), 0, encMsg, 28, bb.array().length);
 		messageId++;
@@ -66,12 +70,14 @@ public class CTR {
 			    i++;
 			}
 			IV++;
+			bb.clear();
 			bb.putInt(IV);
 		    System.arraycopy( bb.array(), 0, randIV, 12, bb.array().length );
 		}
+		System.out.println(Arrays.toString(encMsg));
 		return encMsg;
 	}
-	public byte[] decryptMessage(byte[] encMsg_) throws Exception{
+	public static byte[] decryptMessage(byte[] encMsg_) throws Exception{
 		Random random = new Random();
 		byte [] newHash = new byte[hash_size];
 		byte [] origHash = new byte[hash_size];
@@ -98,35 +104,47 @@ public class CTR {
 			randLengthId[i] = (byte) (b ^ encMsg_[block_size+i]);
 			i++;
 		}
-		
+		//System.out.println(Arrays.toString(randLengthId));
 	    //this copies the length into the first part of the encryption
 	    System.arraycopy( randLengthId, 8, bb.array(), 0, bb.array().length );
 	    msgLength = bb.getInt();
 	    msg = new byte[msgLength];
 	    alignedLength = msgLength + block_size- (msgLength % block_size);
 	    System.arraycopy(randLengthId, 12, bb.array(), 0, bb.array().length);
-	    bb.putInt(messageId);
-	    messageId = bb.getInt() + 1;
+	    bb.clear();
+	    //bb.putInt(messageId);
+	    messageId = bb.getInt();
+	    messageId++;
+	    bb.clear();
+	    System.out.println(randIV);
 		System.arraycopy( randIV, 12, bb.array(), 0, bb.array().length ); 
-		IV = bb.getInt()+1;
+		IV = bb.getInt();
+		IV = IV +1;
+		bb.clear();
+		
 		bb.putInt(IV);
+		System.out.println("RandIV");
+		System.out.println(randIV);
 	    System.arraycopy( bb.array(), 0, randIV, 12, bb.array().length );   
-
+	    System.out.println(randIV);
 		//start encrypting the IV and xoring it with the buffer
+	    System.out.println(Integer.toString(alignedLength));
 		for(int iter = 0; iter < alignedLength; iter+=16){
 			//Encrypt IV
+			//System.out.println(randIV);
 			encIV = ECB.encrypt(randIV);
 			i = 0;
 			for (byte b : randIV){
 				//look at comment on top as to why this is done
 				//NOTE: Add comment on top why this is done
 				if(msgLength != 0){
-					msg[iter+i] = (byte) (b ^ encMsg_[32+iter+i]);
+					msg[iter+i] = (byte) (b ^ encMsg_[31+iter+i]);
 					msgLength--;
 					i++;
 				}
 			}
 			IV++;
+			bb.clear();
 			bb.putInt(IV);
 		    System.arraycopy( bb.array(), 0, randIV, 12, bb.array().length );   
 		}
@@ -137,9 +155,11 @@ public class CTR {
 		for (byte b : encIV){
 			//look at comment on top as to why this is done
 			//NOTE: Add comment on top why this is done
-			origHash[i] = (byte) (b ^ encMsg_[32+alignedLength+i]);
+			origHash[i] = (byte) (b ^ encMsg_[31+alignedLength+i]);
 			i++;
 		}
+		System.out.println("Decrypt:");
+		System.out.println(Arrays.toString(msg));
 		//Verify message
 		newHash = SHA512.hash(msg);
 		if(Arrays.equals(newHash, origHash)){

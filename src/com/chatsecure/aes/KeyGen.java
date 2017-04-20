@@ -62,7 +62,7 @@ public class KeyGen {
 		int tempArr[] = new int[4];
 		
 		keyFirstFour = convertKeyTextToIntArr(keyText, counter);
-		
+
 		//copy first four indexes into the keyArr
 		for(int i=0; i< counter; i++) {
 			for(int j=0; j<4; j++) {
