@@ -72,7 +72,10 @@ public class CTR {
 	    //this copies the length into the first part of the encryption
 	    System.arraycopy( plainText, 8, bb.array(), 0, Integer.SIZE/8 );
 	    msgLength = bb.getInt();  
-
+	    if(msgLength > plainText.length || msgLength < 0){
+	    	System.out.println("Invalid Length Found");
+	    	return null;
+	    }
 	    byte[] msg = new byte[msgLength];
 	    System.arraycopy(plainText, block_size, msg, 0,msgLength);
 	    System.out.println(msg.length);
@@ -123,4 +126,3 @@ public class CTR {
 	}
 
 }
-

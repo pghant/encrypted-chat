@@ -25,10 +25,14 @@ public class aes_test {
 			System.out.println("Test 3 Success");
 		else 
 			System.out.println("Test 3 FAILURE");
-		if(test4_DifferentKey_ctr())
+		if(test4_Key_ctr())
 			System.out.println("Test 4 Success");
 		else 
 			System.out.println("Test 4 FAILURE");
+		if(test5_DifferntKey_ctr())
+			System.out.println("Test 5 Success");
+		else 
+			System.out.println("Test 5 FAILURE");
 		
 		
 	}
@@ -92,7 +96,7 @@ public class aes_test {
 			return true;
 		return false;
 	}
-	public static boolean test4_DifferentKey_ctr() throws Exception{
+	public static boolean test4_Key_ctr() throws Exception{
 		
 		
 		byte[] test_key = {0x0A,0x0B,0x0C,0x0D,0x1E,0x2F,0x10,0x02,0x30,0x44,0x5A,0x6B,0x77,0x08,0x09,0x11};
@@ -110,5 +114,28 @@ public class aes_test {
 		if(msg.equals(s))
 			return true;
 		return false;
+	}
+	public static boolean test5_DifferntKey_ctr() throws Exception{
+		
+		
+		byte[] test_key = {0x0A,0x0B,0x0C,0x0D,0x1E,0x2F,0x10,0x02,0x30,0x44,0x5A,0x6B,0x77,0x08,0x09,0x11};
+		byte[] test_key1 = {0x1A,0x1B,0x1C,0x1D,0x1E,0x1F,0x11,0x12,0x31,0x14,0x51,0x61,0x71,0x18,0x19,0x11};
+
+		CTR.setkey(test_key);
+		String msg = "16 byte message!";
+		byte[] encMsg = CTR.encryptMessage(msg.getBytes());
+		CTR.setkey(test_key);
+		CTR.setkey(test_key1);
+		byte[] decMsg = CTR.decryptMessage(encMsg);
+		if(decMsg != null){
+			String s = new String(decMsg);
+			System.out.print("Original String = ");
+			System.out.println(msg);
+			System.out.print("Output String = ");
+			System.out.println(s);
+			if(msg.equals(s))
+				return false;
+		}
+		return true;
 	}
 }
