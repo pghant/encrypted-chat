@@ -23,15 +23,15 @@ public class CTR {
 	}
 	
 	public static byte[] encryptMessage(byte[] msg_) throws Exception{
-		Random random = new Random();
-		byte[] hash = new byte[hash_size];
-		byte[] encIV;
-		byte[] rand = new byte[8];
-		int alignedLength = msg_.length + block_size- (msg_.length % block_size);
-		byte[] encMsg = new byte[block_size+block_size+alignedLength + hash_size];
-		byte[] plainText = new byte[block_size+alignedLength + hash_size];
-		random.nextBytes(iv);
-		random.nextBytes(rand);
+	    Random random = new Random();
+	    byte[] hash = new byte[hash_size];
+	    byte[] encIV;
+	    byte[] rand = new byte[8];
+	    int alignedLength = msg_.length + block_size- (msg_.length % block_size);
+	    byte[] encMsg = new byte[block_size+block_size+alignedLength + hash_size];
+	    byte[] plainText = new byte[block_size+alignedLength + hash_size];
+	    random.nextBytes(iv);
+	    random.nextBytes(rand);
 	    ByteBuffer bb = ByteBuffer.allocate(4);
 	    //copy the plaintext IV
 	    bb.putInt(0);
@@ -58,10 +58,10 @@ public class CTR {
 		return encMsg;
 	}
 	public static byte[] decryptMessage(byte[] encMsg_) throws Exception{
-		byte [] newHash = new byte[hash_size];
-		byte [] origHash = new byte[hash_size];
-		int msgLength;
-		byte[] plainText = new byte[encMsg_.length-16];
+	    byte [] newHash = new byte[hash_size];
+	    byte [] origHash = new byte[hash_size];
+	    int msgLength;
+	    byte[] plainText = new byte[encMsg_.length-16];
 	    ByteBuffer bb = ByteBuffer.allocate(Integer.SIZE/8);
 	    //get the initial IV
 	    System.arraycopy( encMsg_, 0, iv, 0, block_size );
@@ -77,18 +77,18 @@ public class CTR {
 	    System.arraycopy(plainText, block_size, msg, 0,msgLength);
 	    System.out.println(msg.length);
 	    System.arraycopy(plainText, plainText.length-hash_size, origHash, 0,hash_size);
-		//Verify message
-		newHash = SHA512.hash(msg);
-		if(Arrays.equals(newHash, origHash)){
-			String response = "Invalid Hash";
-			msg = null;
-			msg = response.getBytes();
-		}
-		return msg;
+	    //Verify message
+	    newHash = SHA512.hash(msg);
+	    if(Arrays.equals(newHash, origHash)){
+	    	String response = "Invalid Hash";
+		    msg = null;
+		    msg = response.getBytes();
+	    }
+	    return msg;
 	}
 	private static byte[]  xorSection(byte[] cipher, int offset) throws Exception{
-		byte[] xorText = new byte[cipher.length];
-		//start encrypting the IV and xoring it with the buffer
+	    byte[] xorText = new byte[cipher.length];
+	    //start encrypting the IV and xoring it with the buffer
 	    updateIV(); 
 		//DECRYPT HASH FROM END OF buffer
 	    for(int iter = 0; iter < cipher.length-offset; iter+=16){
@@ -97,6 +97,7 @@ public class CTR {
 	    }
 	    return xorText;
 	}
+
 	private static void updateIV(){
 		ByteBuffer bb = ByteBuffer.allocate(4);		
 		int currIV;
