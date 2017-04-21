@@ -4,6 +4,7 @@ import com.chatsecure.client.Message;
 import com.chatsecure.client.MessageType;
 import com.chatsecure.client.Status;
 import com.chatsecure.client.User;
+import com.chatsecure.aes.CTR;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -235,7 +236,16 @@ public class SecureConnection
 
             //example of what the call will look like eventually when I encrypt this
             //message with AES128 counter mode using the shared key established in doHandShake
+            
             // encrypted_msg_bytes = Encrypter.AESencrypt(SHARED_KEY,msg_bytes);
+            try {
+				CTR.setkey(SHARED_KEY);
+				encrypted_msg_bytes = CTR.encryptMessage(msg_bytes);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+            
 
             //test call until encryption alg is implemented
             encrypted_msg_bytes = "Encrypted User Message".getBytes( );
@@ -307,7 +317,13 @@ public class SecureConnection
 
         //example of what call will look like when I decrypt using AES decryption alg using
         //shared key established in doHandShake
-        //decrypted_msg_bytes = Encrypter.AESdecrypt(SHARED_KEY,encrypted_msg_bytes);
+        try {
+			CTR.setkey(SHARED_KEY);
+			decrypted_msg_bytes = CTR.decryptMessage(encrypted_msg_bytes);
+		} catch (Exception e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 
         //testing
         decrypted_msg_bytes = "Decrypted User Message".getBytes( );
