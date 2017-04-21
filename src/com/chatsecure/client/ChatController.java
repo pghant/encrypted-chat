@@ -104,6 +104,8 @@ public class ChatController
             System.out.println( t1 );
 
             myStatusSymbol.setFill( Paint.valueOf( "red" ) );
+
+            status_online_btn.setSelected(false);
         } );
 
         status_online_btn.selectedProperty( ).addListener( ( observableValue, aBoolean, t1 ) -> {
@@ -112,6 +114,7 @@ public class ChatController
             System.out.println( t1 );
 
             myStatusSymbol.setFill( Paint.valueOf( "green" ) );
+            status_away_btn.setSelected(false);
         } );
 
 

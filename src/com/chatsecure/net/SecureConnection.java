@@ -78,7 +78,7 @@ public class SecureConnection
 
         assert becomeP2Pcoordinator : "Initialized SecureConnection without host address and becomeP2P is false";
 
-        initalize( InetAddress.getLocalHost( ).toString( ), userSelf, port_num, true );
+        initalize( InetAddress.getLocalHost( ).getHostAddress(), userSelf, port_num, true );
 
 
     }
@@ -89,7 +89,7 @@ public class SecureConnection
      * @param port_num             port number for SecureChat app
      * @param becomeP2Pcoordinator flag to indicate if you are the sole P2P coordinator for a chat room
      */
-    public void initalize( String host_addr, User new_user, int port_num, boolean becomeP2Pcoordinator ) throws
+    public synchronized void initalize( String host_addr, User new_user, int port_num, boolean becomeP2Pcoordinator ) throws
             IOException, ClassNotFoundException{
 
         //if userSocket is not null then SecureConnection already initialized so just return
@@ -110,6 +110,7 @@ public class SecureConnection
 
             Long myID = Thread.currentThread( ).getId( );
             coordinator = new Thread( new P2Pcoordinator( myID ) );
+            coordinator.setDaemon(true);
             coordinator.start( );
 
 
@@ -131,16 +132,18 @@ public class SecureConnection
                 break;
 
             }
-            stream_from_P2Pcoord = new ObjectInputStream( userSocket.getInputStream( ) );
             stream_to_P2Pcoord = new ObjectOutputStream( userSocket.getOutputStream( ) );
+            stream_from_P2Pcoord = new ObjectInputStream( userSocket.getInputStream( ) );
+
 
             stream_to_P2Pcoord.writeObject( new Message( MessageType.SELFCONNECTION,
                                                          userSelf, null ) );
 
         } else{
             userSocket = new Socket( hostAddr, portNum );
-            stream_from_P2Pcoord = new ObjectInputStream( userSocket.getInputStream( ) );
             stream_to_P2Pcoord = new ObjectOutputStream( userSocket.getOutputStream( ) );
+
+            stream_from_P2Pcoord = new ObjectInputStream( userSocket.getInputStream( ) );
 
             try{
                 doHandShake( );
@@ -421,6 +424,7 @@ public class SecureConnection
 
 
             P2Plistener_thread = new Thread( new P2Plistener( ) );
+            P2Plistener_thread.setDaemon(true);
             P2Plistener_thread.start( );
 
         }
@@ -519,6 +523,7 @@ public class SecureConnection
 
                 try{
                     listening_sock = new ServerSocket( portNum, BACKLOG );
+                    listening_sock.setReuseAddress(true);
                 } catch ( IOException e ){
                     Logger.getLogger( P2Plistener.class.toString( ) ).log( Level.SEVERE,
                                                                            "Server Socket failed in P2Plistner" );
@@ -535,6 +540,10 @@ public class SecureConnection
                     try{
 
                         t = new Thread( new P2Phandler( listening_sock.accept( ) ) );
+                        t.setDaemon(true);
+                        System.out.println("about to sleep");
+                        Thread.sleep(500);
+                        System.out.println("waking up now");
                         threadList.add( t );
                         t.start( );
 
@@ -543,6 +552,8 @@ public class SecureConnection
                         Logger.getLogger( P2Plistener.class.toString( ) ).log( Level.SEVERE,
                                                                                "Server userSocket accept failed in P2Plistner" );
 
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
 
 
@@ -559,6 +570,7 @@ public class SecureConnection
             boolean continueHandling = true;
 
             P2Phandler( Socket connected_sock ){
+                System.out.println("inside handler ctor");
                 this.connected_sock = connected_sock;
                 host_connections.put( Thread.currentThread( ).getId( ), connected_sock );
 
@@ -569,8 +581,10 @@ public class SecureConnection
             @Override
             public void run( ){
 
-                try ( ObjectInputStream iis = new ObjectInputStream( connected_sock.getInputStream( ) );
-                      ObjectOutputStream oos = new ObjectOutputStream( connected_sock.getOutputStream( ) ) ){
+                System.out.println("inside p2phandler running");
+                try ( ObjectOutputStream oos = new ObjectOutputStream( connected_sock.getOutputStream( ) );
+                ObjectInputStream iis = new ObjectInputStream( connected_sock.getInputStream( ) );
+                      ){
 
                     Message msg;
                     while ( connected_sock.isConnected( ) && continueHandling ){

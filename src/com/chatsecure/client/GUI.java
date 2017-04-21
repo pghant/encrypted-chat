@@ -12,13 +12,12 @@ public class GUI extends Application {
 
     private static Stage theStage;
 
+    private Thread t;
     public static Stage getPrimaryStage( ){
         return theStage;
     }
 
-    public void changeParam( User usr ){
-        usr.setStatus( Status.AWAY );
-    }
+
 
     @Override
     public void start(Stage primaryStage) throws Exception{
@@ -35,14 +34,6 @@ public class GUI extends Application {
         //to access stage from other classes; set new to chat display after login screen
         theStage = primaryStage;
 
-
-        User u = new User( "JPC", Status.ONLINE );
-
-        System.out.println( "before call: " + u );
-
-        changeParam( u );
-
-        System.out.println( "after call: " + u );
 
 
 //
@@ -157,7 +148,12 @@ public class GUI extends Application {
         primaryStage.show();
 
 
-        controller.TESTADDUSER( );
+        //controller.TESTADDUSER( );
+        MessageReceiver rcvr;
+
+        t = new Thread( (rcvr= new MessageReceiver(5323, controller, "JPC")));
+        t.setDaemon(true);
+        t.start();
 
     }
 
