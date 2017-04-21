@@ -72,7 +72,7 @@ public class CTR {
 	    byte [] newHash = new byte[hash_size];
 	    byte [] origHash = new byte[hash_size];
 	    int msgLength;
-	    byte[] plainText = new byte[encMsg_.length-block_size];
+	    byte[] plainText = new byte[encMsg_.length-2*block_size];
 	    ByteBuffer bb = ByteBuffer.allocate(Integer.SIZE/8);
 	    //get the initial IV
 	    System.arraycopy( encMsg_, 0, iv, 0, block_size );
