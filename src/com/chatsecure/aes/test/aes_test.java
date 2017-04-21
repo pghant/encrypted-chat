@@ -33,8 +33,10 @@ public class aes_test {
 			System.out.println("Test 5 Success");
 		else 
 			System.out.println("Test 5 FAILURE");
-		
-		
+		if(test6_EncBufferChanged_ctr())
+			System.out.println("Test 6 Success");
+		else 
+			System.out.println("Test 6 FAILURE");
 	}
 
 	public static boolean test1_LessThenBlockSize_ctr() throws Exception{
@@ -126,6 +128,29 @@ public class aes_test {
 		byte[] encMsg = CTR.encryptMessage(msg.getBytes());
 		CTR.setkey(test_key);
 		CTR.setkey(test_key1);
+		byte[] decMsg = CTR.decryptMessage(encMsg);
+		if(decMsg != null){
+			String s = new String(decMsg);
+			System.out.print("Original String = ");
+			System.out.println(msg);
+			System.out.print("Output String = ");
+			System.out.println(s);
+			if(msg.equals(s))
+				return false;
+		}
+		return true;
+	}
+	public static boolean test6_EncBufferChanged_ctr() throws Exception{
+		
+		
+		byte[] test_key = {0x0A,0x0B,0x0C,0x0D,0x1E,0x2F,0x10,0x02,0x30,0x44,0x5A,0x6B,0x77,0x08,0x09,0x11};
+
+		CTR.setkey(test_key);
+		String msg = "16 byte message!";
+		byte[] encMsg = CTR.encryptMessage(msg.getBytes());
+		encMsg[34] = 0x11;
+		encMsg[35] = 0x11;
+		encMsg[36] = 0x11;
 		byte[] decMsg = CTR.decryptMessage(encMsg);
 		if(decMsg != null){
 			String s = new String(decMsg);
