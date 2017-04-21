@@ -222,7 +222,7 @@ public class SecureConnection
                                                          userSelf,
                                                          byteToString( pubkey ) ) );
 
-
+//
             Message returnMsg = (Message) stream_from_P2Pcoord.readObject( );
 
             assert returnMsg.getType( ) ==

@@ -150,6 +150,7 @@ public class GUI extends Application {
 //        System.out.println( "Size: " + observableList.size( ) );
 
 
+        //
 
         primaryStage.setTitle("SecureChat");
         primaryStage.setScene(scene);

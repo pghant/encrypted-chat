@@ -16,7 +16,7 @@ public class MessageReceiver implements Runnable
 
     //TESTING INIT
     private static User userSelf = new User( "JPC", Status.ONLINE );
-
+//testing
 
     /**
      * constructor called by the userSelf who is assuming role is P2P coordinator

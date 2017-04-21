@@ -3,6 +3,7 @@ package com.chatsecure.client;
 import java.io.Serializable;
 import java.util.ArrayList;
 
+
 /**
  * Created by jcavalie on 3/13/17.
  */

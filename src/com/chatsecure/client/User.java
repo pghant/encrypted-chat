@@ -21,6 +21,7 @@ public class User implements Serializable{
         return this;
     }
 
+    //
     @Override
     public String toString( ){
         return String.format( "User{ name: %1$s\nstatus: %2$s}", name, status );

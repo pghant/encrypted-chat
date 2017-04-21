@@ -8,3 +8,4 @@ import java.io.Serializable;
 public enum MessageType implements Serializable{
     USER, REMOVEUSER, ADDUSER, STATUS, HANDSHAKE, MIGRATECONTROLLER, SELFCONNECTION
 }
+//

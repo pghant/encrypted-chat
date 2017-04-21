@@ -83,6 +83,8 @@ public class ChatController
 
     }
 
+
+    //
     @FXML
     public void initialize( ){
 
