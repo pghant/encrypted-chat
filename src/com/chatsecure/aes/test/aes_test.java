@@ -1,10 +1,5 @@
 package com.chatsecure.aes.test;
-import java.util.Arrays;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
 
 import com.chatsecure.aes.*;
 public class aes_test {
