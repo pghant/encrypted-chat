@@ -60,23 +60,25 @@ public class CTR {
 	    hash = SHA512.hash(msg_);
 	    //add HASH to end of message
 	    System.arraycopy(hash, 0, plainText, plainText.length-hash_size, hash_size);
+	    
 		//start encrypting the IV and xoring it with the buffer
 	    byte[] cipherText = xorSection(plainText, 0);
 	    //copy all the encrypted data to the encrypted message after the IV
 	    System.arraycopy(cipherText, 0, encMsg, block_size, cipherText.length);
+	    
 		return encMsg;
 	}
 	public static byte[] decryptMessage(byte[] encMsg_) throws Exception{
 	    byte [] newHash = new byte[hash_size];
 	    byte [] origHash = new byte[hash_size];
 	    int msgLength;
-	    byte[] plainText = new byte[encMsg_.length-16];
+	    byte[] plainText = new byte[encMsg_.length-block_size];
 	    ByteBuffer bb = ByteBuffer.allocate(Integer.SIZE/8);
 	    //get the initial IV
 	    System.arraycopy( encMsg_, 0, iv, 0, block_size );
 	    //decrypt the length and message id
 	    //encrypt XOR
-	    plainText = xorSection(encMsg_, 16);
+	    plainText = xorSection(encMsg_, block_size);
 		
 	    //this copies the length into the first part of the encryption
 	    System.arraycopy( plainText, 8, bb.array(), 0, Integer.SIZE/8 );
@@ -91,13 +93,14 @@ public class CTR {
 	    //start copying the unencrypted data into the return buffer
 	    System.arraycopy(plainText, block_size, msg, 0,msgLength);
 	    //grab the hash that is at the end of the buffer
-	    System.arraycopy(plainText, plainText.length-hash_size, origHash, 0,hash_size);
+	    System.arraycopy(plainText, plainText.length-(hash_size+block_size), origHash, 0,hash_size);
 	    //Verify message
 	    newHash = SHA512.hash(msg);
-	    if(Arrays.equals(newHash, origHash)){
+	    if(!Arrays.equals(newHash, origHash)){
 	    	System.out.println("Invalid Hash");
 	    	return null;
 	    }
+	   
 	    return msg;
 	}
 	private static byte[]  xorSection(byte[] buff, int offset) throws Exception{
