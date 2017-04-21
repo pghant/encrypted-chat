@@ -26,9 +26,9 @@ public class MessageReceiver implements Runnable
      * @throws IOException
      * @throws ClassNotFoundException
      */
-    MessageReceiver( int portNum,
-                     final ChatController chatController,
-                     final String username ) throws IOException, ClassNotFoundException{
+    public MessageReceiver( int portNum,
+                            final ChatController chatController,
+                            final String username ) throws IOException, ClassNotFoundException{
 
 
         this.chatController = chatController;
@@ -53,9 +53,9 @@ public class MessageReceiver implements Runnable
     }
 
 
-    MessageReceiver(  String hostName, int portNum,
-                      final ChatController chatController,
-                      final String username ) throws IOException, ClassNotFoundException{
+    public MessageReceiver( String hostName, int portNum,
+                            final ChatController chatController,
+                            final String username ) throws IOException, ClassNotFoundException{
 
 
         this.chatController = chatController;
