@@ -9,3 +9,4 @@ public enum Status implements Serializable
 {
     AWAY,ONLINE,CONTROLLER
 }
+//

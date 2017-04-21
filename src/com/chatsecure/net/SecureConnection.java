@@ -9,10 +9,12 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -30,20 +32,23 @@ import java.util.logging.Logger;
 public class SecureConnection
 {
 
-    private static Thread coordinator = null;
-    private static String hostAddr;
-    private static Integer portNum;
-    private static Socket userSocket = null;
-    private static ObjectOutputStream stream_to_P2Pcoord;
-    private static ObjectInputStream stream_from_P2Pcoord;
-    private static User user;
+    private Thread coordinator = null;
+    private String hostAddr;
+    private Integer portNum;
+    private Socket userSocket = null;
+    private ObjectOutputStream stream_to_P2Pcoord;
+    private ObjectInputStream stream_from_P2Pcoord;
+    private User userSelf;
     private static final SecureConnection theInstance = new SecureConnection( );
 
+    private static AtomicBoolean initialized = new AtomicBoolean( false );
 
 
     //if you are P2Pcoordinator then you generate this key and distribute to all clients via RSA;
     //else this key is set in call doHandShake
     private static byte[] SHARED_KEY = new byte[ 16 ];
+
+
 
 
     public static SecureConnection getConnection( ){
@@ -55,20 +60,25 @@ public class SecureConnection
     }
 
 
+
+
+
     /**
-     * version of init called by the user who becomes P2P coordinator where host address is local host
-     * @param new_user name of user becoming P2P coordinator
-     * @param port_num port number
+     * version of init called by the userSelf who becomes P2P coordinator where host address is local host
+     *
+     * @param new_user             name of userSelf becoming P2P coordinator
+     * @param port_num             port number
      * @param becomeP2Pcoordinator must be true here
+     *
      * @throws IOException
      * @throws ClassNotFoundException
      */
-    public static void initalize( User new_user, int port_num, boolean becomeP2Pcoordinator ) throws
+    public void initalize( User new_user, int port_num, boolean becomeP2Pcoordinator ) throws
             IOException, ClassNotFoundException{
 
         assert becomeP2Pcoordinator : "Initialized SecureConnection without host address and becomeP2P is false";
 
-        initalize(InetAddress.getLocalHost().toString(),user,port_num,true);
+        initalize( InetAddress.getLocalHost( ).toString( ), userSelf, port_num, true );
 
 
     }
@@ -79,7 +89,7 @@ public class SecureConnection
      * @param port_num             port number for SecureChat app
      * @param becomeP2Pcoordinator flag to indicate if you are the sole P2P coordinator for a chat room
      */
-    public static void initalize( String host_addr, User new_user, int port_num, boolean becomeP2Pcoordinator ) throws
+    public void initalize( String host_addr, User new_user, int port_num, boolean becomeP2Pcoordinator ) throws
             IOException, ClassNotFoundException{
 
         //if userSocket is not null then SecureConnection already initialized so just return
@@ -87,14 +97,9 @@ public class SecureConnection
             return;
         }
 
-        user = new_user;
+        userSelf = new_user;
         hostAddr = host_addr;
         portNum = port_num;
-
-
-        userSocket = new Socket( hostAddr, portNum );
-        stream_from_P2Pcoord = new ObjectInputStream( userSocket.getInputStream( ) );
-        stream_to_P2Pcoord = new ObjectOutputStream( userSocket.getOutputStream( ) );
 
 
         if ( becomeP2Pcoordinator ){
@@ -104,37 +109,98 @@ public class SecureConnection
             random.nextBytes( SHARED_KEY );
 
             Long myID = Thread.currentThread( ).getId( );
-            coordinator = new Thread( new P2Pcoordinator(myID ) );
-            coordinator.start();
+            coordinator = new Thread( new P2Pcoordinator( myID ) );
+            coordinator.start( );
+
+
+            //start coordinator then connect where hostAddr is localAddr so
+            //coordinator will handle connection same way it would handle
+            //connection from remote host.
+            while ( true ){
+                try{
+                    //chance that P2P coordinator may not have started P2P listener
+                    //quick enough and this call will throw, so loop on socketExceptions
+                    //until sucessful
+                    userSocket = new Socket( hostAddr, portNum );
+                } catch ( SocketException e ){
+                    Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.INFO,
+                                                                                "Looping waiting for p2p" +
+                                                                                " listener to start", e );
+                    continue;
+                }
+                break;
+
+            }
+            stream_from_P2Pcoord = new ObjectInputStream( userSocket.getInputStream( ) );
+            stream_to_P2Pcoord = new ObjectOutputStream( userSocket.getOutputStream( ) );
+
+            stream_to_P2Pcoord.writeObject( new Message( MessageType.SELFCONNECTION,
+                                                         userSelf, null ) );
 
         } else{
+            userSocket = new Socket( hostAddr, portNum );
+            stream_from_P2Pcoord = new ObjectInputStream( userSocket.getInputStream( ) );
+            stream_to_P2Pcoord = new ObjectOutputStream( userSocket.getOutputStream( ) );
 
             try{
                 doHandShake( );
             } catch ( IOException | ClassNotFoundException e ){
-                Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.SEVERE, "Error Initialize :doHandShake()", e );
+                Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.SEVERE,
+                                                                            "Error Initialize :doHandShake()", e );
                 throw e;
             }
         }
 
+        notifyAll( );
+
     }
 
-    private static Long byteArrayToLong( byte[] b ){
+    public boolean isConnected( ){
+        return userSocket.isConnected( );
+    }
+
+    public synchronized SecureConnection waitForInitialization( ){
+        //TESTING
+        long loopCount = 0;
+        //
+
+        while ( !initialized.get( ) ){
+            try{
+
+                //TESTING
+                if ( loopCount++ == 5 ){
+                    return this;
+                }
+                //
+
+                wait( 1 );
+
+            } catch ( InterruptedException e ){
+                Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.WARNING,
+                                                                            "SecureConnection interrupted wait", e );
+
+            }
+        }
+
+        return this;
+    }
+
+    private Long byteArrayToLong( byte[] b ){
         final ByteBuffer bb = ByteBuffer.wrap( b );
         return bb.getLong( );
     }
 
-    private static byte[] LongToByteArray( Long i ){
+    private byte[] LongToByteArray( Long i ){
         final ByteBuffer bb = ByteBuffer.allocate( Long.SIZE / Byte.SIZE );
         bb.putLong( i );
         return bb.array( );
     }
 
-    private static String byteToString( byte[] b ){
+    private String byteToString( byte[] b ){
         return new String( b, Charset.forName( "US-ASCII" ) );
     }
 
-    private static void doHandShake( ) throws IOException, ClassNotFoundException{
+    private void doHandShake( ) throws IOException, ClassNotFoundException{
         byte[] pubkey;
 
         byte[] shared_secret;
@@ -153,10 +219,10 @@ public class SecureConnection
             //p2p coordinator after connecting in initialize
 
             stream_to_P2Pcoord.writeObject( new Message( MessageType.HANDSHAKE,
-                                                         user,
+                                                         userSelf,
                                                          byteToString( pubkey ) ) );
 
-
+//
             Message returnMsg = (Message) stream_from_P2Pcoord.readObject( );
 
             assert returnMsg.getType( ) ==
@@ -189,18 +255,19 @@ public class SecureConnection
     }
 
 
-    public static void writeMessage( Message msg ) throws IOException{
+
+    public void writeMessage( Message msg ) throws IOException{
 
         writeMessage_( msg, null );
     }
 
-    public static void writeMessage( Message msg, ObjectOutputStream oos ) throws IOException{
+    public void writeMessage( Message msg, ObjectOutputStream oos ) throws IOException{
 
         writeMessage_( msg, oos );
     }
 
 
-    private static void writeMessage_( Message msg, ObjectOutputStream oos ) throws IOException{
+    synchronized private void writeMessage_( Message msg, ObjectOutputStream oos ) throws IOException{
         byte[] msg_bytes;
         byte[] encrypted_msg_bytes;
 
@@ -215,7 +282,7 @@ public class SecureConnection
             // encrypted_msg_bytes = Encrypter.AESencrypt(SHARED_KEY,msg_bytes);
 
             //test call until encryption alg is implemented
-            encrypted_msg_bytes = "Encrypted User Message".getBytes( );
+            encrypted_msg_bytes = msg_bytes;
             //testing
 
 
@@ -236,7 +303,7 @@ public class SecureConnection
      *
      * @throws IOException
      */
-    private static byte[] consumeAllBytesFromInputStream( ObjectInputStream iis ) throws IOException{
+    private byte[] consumeAllBytesFromInputStream( ObjectInputStream iis ) throws IOException{
         ArrayList<Byte> byte_array = new ArrayList<>( );
 
         do{
@@ -264,16 +331,16 @@ public class SecureConnection
     }
 
 
-    public static Message readMessage( ) throws IOException, ClassNotFoundException{
+    public Message readMessage( ) throws IOException, ClassNotFoundException{
         return readMessage_( null );
     }
 
-    public static Message readMessage( ObjectInputStream iis ) throws IOException, ClassNotFoundException{
+    public Message readMessage( ObjectInputStream iis ) throws IOException, ClassNotFoundException{
         return readMessage_( iis );
     }
 
 
-    private static Message readMessage_( ObjectInputStream iis ) throws IOException, ClassNotFoundException{
+    synchronized private Message readMessage_( ObjectInputStream iis ) throws IOException, ClassNotFoundException{
 
 
         byte[] encrypted_msg_bytes;
@@ -287,7 +354,7 @@ public class SecureConnection
         //decrypted_msg_bytes = Encrypter.AESdecrypt(SHARED_KEY,encrypted_msg_bytes);
 
         //testing
-        decrypted_msg_bytes = "Decrypted User Message".getBytes( );
+        decrypted_msg_bytes = encrypted_msg_bytes;
         //testing
 
         Message new_msg;
@@ -307,56 +374,63 @@ public class SecureConnection
         return new_msg;
     }
 
-    void updateStatus(Status status) throws IOException{
-        writeMessage( new Message( MessageType.STATUS,
-                                   user, null ).setStatus( status ) );
+//    public void updateStatus( Status status ) throws IOException{
+//        writeMessage( new Message( MessageType.STATUS,
+//                                   userSelf, null ).setStatus( status ) );
+//
+//    }
 
+    public void closeConnection( ) throws IOException{
+
+        writeMessage( new Message( MessageType.REMOVEUSER, userSelf, null ) );
+
+//        if ( coordinator != null ){
+//            //if coordinator closes connection then need to migrate coordinator
+//            //or just kick everyone off
+//
+//        }
     }
 
-    void closeConnection() throws IOException{
 
-        writeMessage( new Message( MessageType.REMOVEUSER,user,null ) );
-
-        if( coordinator != null){
-           //if coordinator closes connection then need to migrate coordinator
-        }
-    }
-
-
-    private static class P2Pcoordinator implements Runnable
+    private class P2Pcoordinator implements Runnable
     {
 
 
-        final ConcurrentMap<Long, Socket> host_connections = new ConcurrentHashMap<>( );
-        final AtomicBoolean continue_coordinating = new AtomicBoolean( true );
-        final ConcurrentHashMap<Long, User> online_users;
+        final ConcurrentMap<Long, Socket> host_connections;
+        final AtomicBoolean continue_coordinating;
+        final ConcurrentMap<Long, User> online_users;
         final User ControllerUser;
         final ArrayBlockingQueue<Message> outgoingMessages;
+        final Long ID_ofCoordinator;
 
 
         Thread P2Plistener_thread;
 
-        P2Pcoordinator(Long userID ) throws IOException{
+        P2Pcoordinator( Long userID ) throws IOException{
+
+            int queueCapacity = 100;
+            outgoingMessages = new ArrayBlockingQueue<>( queueCapacity );
+
+            ID_ofCoordinator = userID;
+            host_connections = new ConcurrentHashMap<>( );
+            online_users = new ConcurrentHashMap<>( );
+
+            ControllerUser = new User( "P2PController", Status.CONTROLLER );
+
+            continue_coordinating = new AtomicBoolean( true );
+
+
             P2Plistener_thread = new Thread( new P2Plistener( ) );
             P2Plistener_thread.start( );
 
-            online_users = new ConcurrentHashMap<>( );
-            ControllerUser = new User( "P2PController", Status.CONTROLLER );
-
-            //add connection to user that is P2P coordinator
-            online_users.put( userID, user );
-            host_connections.put( userID, userSocket );
-
-            int queueCapacity=100;
-            outgoingMessages = new ArrayBlockingQueue<>( queueCapacity );
-
         }
 
-        void closeConnection( Long threadID ){
+        void internalCloseConnection( Long threadID ){
 
-            host_connections.forEach( ( ID, socketConn ) -> {
-
-                if ( ID.equals( threadID ) || ( threadID == null ) ){
+            //if threadID is null then close all connections because
+            //P2P coordinator is signing off (or something like that)
+            if ( threadID == null || Objects.equals( threadID, ID_ofCoordinator ) ){
+                host_connections.forEach( ( ID, socketConn ) -> {
                     try{
                         socketConn.close( );
                     } catch ( IOException e ){
@@ -364,40 +438,45 @@ public class SecureConnection
                                                                                "Socket close failed in P2Plistner" );
 
 
-
                     }
-                }
 
 
-            } );
-
-            if ( threadID == null ){
-
+                } );
                 host_connections.clear( );
+                online_users.clear( );
 
             } else{
+                try{
+                    host_connections.get( threadID ).close( );
+                } catch ( IOException e ){
+                    Logger.getLogger( P2Plistener.class.toString( ) ).log( Level.SEVERE,
+                                                                           "Socket close failed in P2Plistner" );
+
+                }
                 online_users.remove( threadID );
                 host_connections.remove( threadID );
             }
         }
 
 
-
         @Override
         public void run( ){
+
             while ( continue_coordinating.get( ) ){
 
-                Message msg = null;
+                Message msg;
                 try{
                     msg = outgoingMessages.take( );
                 } catch ( InterruptedException e ){
-                    Logger.getLogger( P2Plistener.class.toString( ) ).log( Level.SEVERE,
-                                                                           "Server Socket failed in P2Plistner" );
+                    Logger.getLogger( P2Plistener.class.toString( ) ).log( Level.WARNING,
+                                                                           "Interrupted exception" +
+                                                                           " in P2P coordinator run" );
+                    continue;
 
                 }
 
 
-
+                //broadcast to everyone but sender
                 final Message finalMsg = msg;
                 host_connections.forEach( ( ID, socketConn ) -> {
                     if ( finalMsg != null ){
@@ -410,15 +489,17 @@ public class SecureConnection
                                                                                       "A broadcast message failed to send",
                                                                                       e );
 
+                                //maybe kill the entire program here
+
                             }
                             if ( finalMsg.getType( ) == MessageType.REMOVEUSER ){
-                                closeConnection( ID );
+                                internalCloseConnection( ID );
                             }
                         }
-                    }else{
+                    } else{
                         Logger.getLogger( this.getClass( ).toString( ) ).log( Level.WARNING,
-                                                                                      "Message extracted from outgoing message" +
-                                                                                      "queue was null" );
+                                                                              "Message extracted from outgoing message" +
+                                                                              "queue was null" );
                     }
                 } );
 
@@ -437,7 +518,7 @@ public class SecureConnection
             P2Plistener( ) throws IOException{
 
                 try{
-                    listening_sock = new ServerSocket( SecureConnection.portNum, BACKLOG );
+                    listening_sock = new ServerSocket( portNum, BACKLOG );
                 } catch ( IOException e ){
                     Logger.getLogger( P2Plistener.class.toString( ) ).log( Level.SEVERE,
                                                                            "Server Socket failed in P2Plistner" );
@@ -450,7 +531,7 @@ public class SecureConnection
             @Override
             public void run( ){
                 Thread t;
-                while ( true ){
+                while ( continue_coordinating.get( ) ){
                     try{
 
                         t = new Thread( new P2Phandler( listening_sock.accept( ) ) );
@@ -462,16 +543,10 @@ public class SecureConnection
                         Logger.getLogger( P2Plistener.class.toString( ) ).log( Level.SEVERE,
                                                                                "Server userSocket accept failed in P2Plistner" );
 
-                        continue_coordinating.set( false );
-                        break;
-
                     }
 
 
                 }
-
-                P2Pcoordinator.this.closeConnection( null );
-
 
             }
         }
@@ -480,15 +555,15 @@ public class SecureConnection
         {
             final Socket connected_sock;
             Boolean handshakeDone = false;
+            User connecteduser = null;
+            boolean continueHandling = true;
 
             P2Phandler( Socket connected_sock ){
                 this.connected_sock = connected_sock;
                 host_connections.put( Thread.currentThread( ).getId( ), connected_sock );
 
 
-
             }
-
 
 
             @Override
@@ -498,7 +573,7 @@ public class SecureConnection
                       ObjectOutputStream oos = new ObjectOutputStream( connected_sock.getOutputStream( ) ) ){
 
                     Message msg;
-                    while ( connected_sock.isConnected( ) ){
+                    while ( connected_sock.isConnected( ) && continueHandling ){
 
                         if ( !handshakeDone ){
 
@@ -506,14 +581,27 @@ public class SecureConnection
                             //and is not encrypted yet because encryption depends
                             //on handshake--so just use readObject to extract Message
                             //containing users public key, then encrypt the shared
-                            //secret AES128 bit key via RSAencrypt then send back to user;
+                            //secret AES128 bit key via RSAencrypt then send back to userSelf;
                             //now all further communication will be encrypted via AES
                             msg = (Message) iis.readObject( );
 
-                            assert msg.getType( ) == MessageType.HANDSHAKE :
-                                    "First sent message must be type HANDSHAKE";
+                            assert msg.getType( ) == MessageType.HANDSHAKE ||
+                                   msg.getType( ) == MessageType.SELFCONNECTION :
+                                    "First sent message must be type HANDSHAKE or SELFCONNECTION";
 
-                            online_users.put( Thread.currentThread( ).getId( ), msg.getUser( ) );
+                            connecteduser = msg.getUser( );
+
+                            online_users.put( Thread.currentThread( ).getId( ), connecteduser );
+
+                            //if the userSelf connecting to P2P coordinator is the
+                            //userSelf assuming role of p2P coordinator then no need
+                            //for remaining handshake operations to continue
+                            if ( msg.getType( ) == MessageType.SELFCONNECTION ){
+                                handshakeDone = true;
+                                continue;
+                            }
+
+
 
                             byte[] usersPubkey = msg.getContent( ).getBytes( );
 
@@ -540,25 +628,31 @@ public class SecureConnection
 
                         } else{
 
+                            //decrypts message to take appropriate actions depending on
+                            //message type then broadcasts message to all other users
                             msg = readMessage( iis );
 
                             switch ( msg.getType( ) ){
 
 
                                 case STATUS:
-                                    online_users.put(Thread.currentThread().getId(),
-                                                     msg.getUser().setStatus( msg.getStatus() ));
+                                    online_users.put( Thread.currentThread( ).getId( ),
+                                                      connecteduser.setStatus( msg.getStatus( ) ) );
                                     break;
 
                                 case REMOVEUSER:
                                     online_users.remove( Thread.currentThread( ).getId( ) );
+                                    continueHandling = false;
                                     break;
 
                                 case USER:
-                                    msg.setUserList( new ArrayList<>( online_users.values( ) ) );
+
                                     break;
 
                             }
+
+
+                            msg.setUserList( new ArrayList<>( online_users.values( ) ) );
                             outgoingMessages.put( msg );
 
                         }
@@ -570,8 +664,19 @@ public class SecureConnection
                     Logger.getLogger( this.getClass( ).toString( ) ).log( Level.SEVERE,
                                                                           "Stream created failed in P2Phandler", e );
 
-                } finally{
-                    closeConnection( Thread.currentThread( ).getId( ) );
+                }
+
+                if ( continueHandling ){
+                    //if continueHandling true then socket closed unexpectedly
+                    //internalCloseConnection( Thread.currentThread( ).getId( ) );
+
+                    try{
+                        outgoingMessages.put( new Message( MessageType.REMOVEUSER, connecteduser, null ) );
+                    } catch ( InterruptedException e ){
+                        Logger.getLogger( this.getClass( ).toString( ) ).log( Level.WARNING,
+                                                                              "Interrupted exception in handler",
+                                                                              e );
+                    }
 
 
                 }
