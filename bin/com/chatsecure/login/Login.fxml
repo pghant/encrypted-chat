@@ -6,7 +6,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane prefHeight="300.0" prefWidth="300.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="application.MainController">
+<AnchorPane prefHeight="300.0" prefWidth="300.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.chatsecure.login.MainController">
    <children>
       <TextField fx:id="txtUserName" layoutX="25.0" layoutY="75.0" promptText="Username">
          <font>
@@ -23,7 +23,7 @@
             <Font size="18.0" />
          </font>
       </Label>
-      <Button layoutX="104.0" layoutY="259.0" mnemonicParsing="false" onAction="#signin" text="Login" />
+      <Button  fx:id="btnSignIn" layoutX="104.0" layoutY="259.0" mnemonicParsing="false" onAction="#signin" text="Login" />
       <CheckBox fx:id="cboxp2pcoordinator" layoutX="230.0" layoutY="181.0" mnemonicParsing="false" onMouseClicked="#checkp2p" />
       <Label layoutX="25.0" layoutY="182.0" text="Is a P2P coordinator?" />
       <TextField fx:id="hostAddress" layoutX="25.0" layoutY="217.0" prefHeight="27.0" prefWidth="232.0" promptText="Host address" />
