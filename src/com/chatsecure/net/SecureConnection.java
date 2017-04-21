@@ -163,20 +163,13 @@ public class SecureConnection
     }
 
     public synchronized SecureConnection waitForInitialization( ){
-        //TESTING
-        long loopCount = 0;
-        //
+
 
         while ( !initialized.get( ) ){
             try{
 
-                //TESTING
-                if ( loopCount++ == 5 ){
-                    return this;
-                }
-                //
 
-                wait( 1 );
+                wait( );
 
             } catch ( InterruptedException e ){
                 Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.WARNING,

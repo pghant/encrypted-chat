@@ -99,22 +99,22 @@ public class ChatController
 
 
         status_away_btn.selectedProperty( ).addListener( ( observableValue, aBoolean, t1 ) -> {
-            System.out.println( observableValue );
-            System.out.println( aBoolean );
-            System.out.println( t1 );
 
-            myStatusSymbol.setFill( Paint.valueOf( "red" ) );
-
-            status_online_btn.setSelected(false);
+            if ( t1 && !aBoolean ){
+                status_online_btn.setSelected( false );
+                myStatusSymbol.setFill( Paint.valueOf( "red" ) );
+            }
         } );
 
         status_online_btn.selectedProperty( ).addListener( ( observableValue, aBoolean, t1 ) -> {
-            System.out.println( observableValue );
-            System.out.println( aBoolean );
-            System.out.println( t1 );
 
-            myStatusSymbol.setFill( Paint.valueOf( "green" ) );
-            status_away_btn.setSelected(false);
+
+            if ( t1 && !aBoolean ){
+
+                status_away_btn.setSelected( false );
+                myStatusSymbol.setFill( Paint.valueOf( "green" ) );
+            }
+
         } );
 
 
