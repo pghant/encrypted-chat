@@ -1,4 +1,4 @@
-package com.chatsecure.aes.main;
+package com.chatsecure.aes;
 
 /**
  * We will be AES in CBC mode. 
@@ -10,7 +10,7 @@ package com.chatsecure.aes.main;
  *
  */
 
-public class AESEncryption {
+public class TestAESEncryption {
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
 

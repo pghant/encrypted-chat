@@ -1,7 +1,10 @@
 package com.chatsecure.aes;
-import com.chatsecure.*;
+
+import com.chatsecure.sha.SHA512;
+
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Random;
 
 public class CTR {
 	private static int block_size = 16;
