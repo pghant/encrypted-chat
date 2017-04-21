@@ -118,19 +118,6 @@ public class ChatController
         } );
 
 
-//        status_away_btn.addEventHandler( EventType.ROOT, event -> {
-//
-//
-//            updateSelfStatusInChat( (CheckMenuItem) event.getSource( ) );
-//
-//
-//        } );
-//
-//
-//        status_online_btn.addEventHandler( EventType.ROOT, event -> {
-//            updateSelfStatusInChat( (CheckMenuItem) event.getSource( ) );
-//        } );
-
 
         chatDisplay.setItems( chatMessages );
 
@@ -205,9 +192,6 @@ public class ChatController
 
     }
 
-    public void TESTADDUSER( ){
-        addNewUserToChat( MessageReceiver.getUserSelf( ) );
-    }
 
     private void addMessageToChat( Message msg ){
         chatMessages.add( msg );
@@ -221,6 +205,9 @@ public class ChatController
         }
     }
 
+    public void addSelfUserToChat( User user ){
+        Platform.runLater( ( ) -> addNewUserToChat( user ) );
+    }
     private void addNewUserToChat( User user ){
         onlineUsers.add( user );
     }

@@ -49,6 +49,7 @@ public class MessageReceiver implements Runnable
         }
 
 
+        chatController.addSelfUserToChat( userSelf );
 
     }
 
@@ -74,6 +75,8 @@ public class MessageReceiver implements Runnable
                                                                        e );
             throw e;
         }
+
+        chatController.addSelfUserToChat( userSelf );
 
 
     }

@@ -148,7 +148,6 @@ public class GUI extends Application {
         primaryStage.show();
 
 
-        //controller.TESTADDUSER( );
         MessageReceiver rcvr;
 
         t = new Thread( (rcvr= new MessageReceiver(5323, controller, "JPC")));

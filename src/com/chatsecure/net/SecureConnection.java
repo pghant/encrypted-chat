@@ -78,7 +78,7 @@ public class SecureConnection
 
         assert becomeP2Pcoordinator : "Initialized SecureConnection without host address and becomeP2P is false";
 
-        initalize( InetAddress.getLocalHost( ).getHostAddress(), userSelf, port_num, true );
+        initalize( InetAddress.getLocalHost( ).getHostAddress( ), new_user, port_num, true );
 
 
     }
@@ -581,7 +581,7 @@ public class SecureConnection
             @Override
             public void run( ){
 
-                System.out.println("inside p2phandler running");
+
                 try ( ObjectOutputStream oos = new ObjectOutputStream( connected_sock.getOutputStream( ) );
                 ObjectInputStream iis = new ObjectInputStream( connected_sock.getInputStream( ) );
                       ){
