@@ -23,13 +23,20 @@ public class Message implements Serializable{
 
     }
 
+    @Override
+    public String toString( ){
+        return String.format( "Message{ user: %1$s\ncontent: %2$s\ntype: %3$s" +
+                              "\nstatus: %4$s}", user, content, type, status );
+    }
+
+
     public Message setUserList( final ArrayList<User> userList ){
         this.userList = userList;
         return this;
     }
 
     public Message setStatus( final Status status ){
-        this.status = status;
+        this.user.setStatus( status );
         return this;
     }
 
@@ -58,6 +65,6 @@ public class Message implements Serializable{
     }
 
     public Status getStatus( ){
-        return status;
+        return this.user.getStatus( );
     }
 }

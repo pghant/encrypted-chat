@@ -1,7 +1,5 @@
 package com.chatsecure.client;
-
 import com.chatsecure.net.SecureConnection;
-
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -15,11 +13,13 @@ public class MessageReceiver implements Runnable
     private SecureConnection secureCon;
     private ChatController chatController;
     private String username;
-    private User user;
+
+    //TESTING INIT
+    private static User userSelf = new User( "JPC", Status.ONLINE );
 
 
     /**
-     * constructor called by the user who is assuming role is P2P coordinator
+     * constructor called by the userSelf who is assuming role is P2P coordinator
      * @param portNum
      * @param chatController
      * @param username
@@ -34,13 +34,13 @@ public class MessageReceiver implements Runnable
         this.chatController = chatController;
         this.username = username;
 
-        this.user = new User( this.username, Status.ONLINE );
+        userSelf = new User( this.username, Status.ONLINE );
 
 
         this.secureCon = SecureConnection.getConnection( );
 
         try{
-            secureCon.initalize( user, portNum, true );
+            secureCon.initalize( userSelf, portNum, true );
         } catch ( IOException | ClassNotFoundException e ){
             Logger.getLogger( MessageReceiver.class.toString( ) ).log( Level.SEVERE,
                                                                        "Error in MessageReceiver Ctor",
@@ -62,12 +62,12 @@ public class MessageReceiver implements Runnable
         this.username = username;
 
 
-        this.user = new User( this.username, Status.ONLINE );
+        userSelf = new User( this.username, Status.ONLINE );
 
 
         this.secureCon = SecureConnection.getConnection( );
         try{
-            secureCon.initalize( hostName, user, portNum, false );
+            secureCon.initalize( hostName, userSelf, portNum, false );
         } catch ( IOException | ClassNotFoundException e ){
             Logger.getLogger( MessageReceiver.class.toString( ) ).log( Level.SEVERE,
                                                                        "Error in MessageReceiver Ctor",
@@ -78,11 +78,15 @@ public class MessageReceiver implements Runnable
 
     }
 
+    public static User getUserSelf( ){
+        return userSelf;
+    }
+
     @Override
     public void run( ){
 
 
-        Message incoming_msg = null;
+        Message incoming_msg;
         while ( secureCon.isConnected( ) ){
 
             try{
@@ -97,7 +101,7 @@ public class MessageReceiver implements Runnable
                                                                            " reading new message",
                                                                            e );
                 //returning will kill thread
-                return;
+                break;
             } finally{
                 //use chatController to show error message then exit
             }
@@ -111,11 +115,11 @@ public class MessageReceiver implements Runnable
                     break;
                 case REMOVEUSER:
                     //here we don't need to compare the entire attached userList with our
-                    //current list; just remove user from onlineUsers list
+                    //current list; just remove userSelf from onlineUsers list
                     break;
                 case ADDUSER:
                     //here we don't need to compare the entire attached userList with our
-                    //current list; just append the user onto onlineUsers list
+                    //current list; just append the userSelf onto onlineUsers list
                     break;
                 case STATUS:
                     break;

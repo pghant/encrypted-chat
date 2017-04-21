@@ -10,20 +10,84 @@ import javafx.stage.Stage;
 
 public class GUI extends Application {
 
+    private static Stage theStage;
 
+    public static Stage getPrimaryStage( ){
+        return theStage;
+    }
 
-
-
+    public void changeParam( User usr ){
+        usr.setStatus( Status.AWAY );
+    }
 
     @Override
     public void start(Stage primaryStage) throws Exception{
-        Parent root = FXMLLoader.load(getClass().getResource( "resources/views/chat_window.fxml" ));
+
+        FXMLLoader loader = new FXMLLoader( getClass( ).getResource( "resources/views/chat_window.fxml" ) );
+
+        Parent root = loader.load( );
+
+        ChatController controller = loader.getController( );
 
         BorderPane actualRoot = (BorderPane)root;
 
 
+        //to access stage from other classes; set new to chat display after login screen
+        theStage = primaryStage;
 
-        Scene scene = new Scene( root);
+
+        User u = new User( "JPC", Status.ONLINE );
+
+        System.out.println( "before call: " + u );
+
+        changeParam( u );
+
+        System.out.println( "after call: " + u );
+
+
+//
+//        StackPane root = new StackPane( );
+//        Rectangle rect = new Rectangle( );
+//        Font f = Font.font( "KacstLetter", 18 );
+//        Text text = new Text( "Hello JPC, how are you today? are you coming tomorrow" );
+//        text.setFont( f );
+//        text.setWrappingWidth( 200 );
+//        root.getChildren( ).addAll( rect, text );
+//        root.setAlignment( Pos.CENTER );
+//        rect.setFill( Color.web( "#53d68e" ) );
+//
+//        Light.Distant light = new Light.Distant( );
+//
+//
+//        light.setColor( Color.web( "#c6d7d6" ) );
+//
+//
+//        Lighting lighting = new Lighting( );
+//
+//        lighting.setDiffuseConstant( 0.9 );
+//
+//        lighting.setLight( light );
+//        lighting.setBumpInput( new Shadow( ) );
+//        lighting.setSurfaceScale( 4.5 );
+//        lighting.setSpecularConstant( 0.6 );
+//        lighting.setSpecularExponent( 29.0 );
+//        light.setAzimuth( 225.0 );
+//        light.setElevation( 49.0 );
+//        rect.setEffect( lighting );
+//        rect.setHeight( text.getBoundsInLocal( ).getHeight( )+10 );
+//        rect.setWidth( text.getBoundsInLocal( ).getWidth( ) +20);
+//
+//        rect.setArcHeight( 20 );
+//        rect.setArcWidth( 30 );
+//
+//        text.setFill( Paint.valueOf( "white" ) );
+
+
+        // primaryStage.initStyle( StageStyle.TRANSPARENT);
+
+
+        //primaryStage.setFullScreen( true );
+        Scene scene = new Scene( root );
 
 
         //TESTING out some random stuff
@@ -90,6 +154,10 @@ public class GUI extends Application {
         primaryStage.setTitle("SecureChat");
         primaryStage.setScene(scene);
         primaryStage.show();
+
+
+        controller.TESTADDUSER( );
+
     }
 
 
