@@ -1,6 +1,7 @@
 package com.chatsecure.rsa;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.Random;
 
 /**
@@ -62,23 +63,27 @@ public class RSAEncryption {
 	/*
 	 * 
 	 */
-	public String encrypt(String plaintext)
+	public static BigInteger encrypt( BigInteger mod, BigInteger exp, BigInteger plaintext )
 	{
-		return (new BigInteger(plaintext.getBytes())).modPow(e, n).toString();
+
+		return ( ( plaintext ) ).modPow( exp, mod );
 	}
-	 
-	public String decrypt(String ciphertext)
+
+	public byte[] decrypt( BigInteger ciphertext )
 	{
-		return new String((new BigInteger(ciphertext)).modPow(d, n).toByteArray());
+		return ( ( ( ciphertext ) ).modPow( d, n ).toByteArray( ) );
 	}
-	
-	
-	public BigInteger getPrivateKey(){
+
+
+	private BigInteger getPrivateKey( ){
 		return d;
 	}
-	
-	public BigInteger getPublicKey(){
-		return e;
+
+	public HashMap<String, BigInteger> getPublicKey( ){
+		HashMap<String, BigInteger> pubKey = new HashMap<>( );
+		pubKey.put( "mod", n );
+		pubKey.put( "exp", e );
+		return pubKey;
 	}
 	
 }
