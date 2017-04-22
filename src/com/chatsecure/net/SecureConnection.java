@@ -15,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -124,11 +125,28 @@ public class SecureConnection
             stream_to_P2Pcoord = userSocket.getOutputStream( );
             stream_from_P2Pcoord = userSocket.getInputStream( );
 
-            to_byte_stream.writeObject( new Message( MessageType.SELFCONNECTION,
-                                                     userSelf, null ) );
+            RSAEncryption RSAenc = new RSAEncryption( );
+
+            Message m = new Message( MessageType.SELFCONNECTION,
+                                     userSelf, null )
+                    .setPublicKey_exponent( RSAenc.getPublicKey( ).get( "exp" ) )
+                    .setPublicKey_moduls( RSAenc.getPublicKey( ).get( "mod" ) );
+
+            to_byte_stream.writeObject( m );
             msg_bytes = byte_stream_in.toByteArray( );
 
+            System.out.println( "INIT MSG BYTES LENGTH: " + msg_bytes.length );
+
             stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
+
+//            try{
+//                doHandShake( );
+//            } catch ( IOException | ClassNotFoundException e ){
+//                Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.SEVERE,
+//                                                                            "Error Initialize:  doHandShake()", e );
+//                throw e;
+//            }
+
 
         } else{
             userSocket = new Socket( hostAddr, portNum );
@@ -201,18 +219,27 @@ public class SecureConnection
                                                      userSelf,
                                                      null )
                                                 .setPublicKey_exponent(
-                                                        RSAenc.getPublicKey( ).get( "exp" ).toString( ) )
+                                                        RSAenc.getPublicKey( ).get( "exp" ) )
                                                 .setPublicKey_moduls(
-                                                        RSAenc.getPublicKey( ).get( "mod" ).toString( ) ) );
+                                                        RSAenc.getPublicKey( ).get( "mod" ) ) );
             msg_bytes = byte_stream_in.toByteArray( );
 
             stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
 
-
-            byte[] in_buff = new byte[ 8192 ];
             int num;
-            num = stream_from_P2Pcoord.read( in_buff, 0, 8192 );
+            byte[] in_buff = new byte[ 8192 * 4 ];
+//            byte[] in_msg_bytes = new byte[ 8192 ];
+//
+//            int total=0;
+//            while ((num = stream_from_P2Pcoord.read( in_buff, 0, 8192 ))>0){
+//
+//                for ( int i = total; i < (total+in_buff.length); i++ ){
+//                    in_msg_bytes[ i ] = in_buff[ i ];
+//                }
+//                total += num;
+//            }
 
+            num = stream_from_P2Pcoord.read( in_buff, 0, in_buff.length );
             Message returnMsg;
 
             ByteArrayInputStream byte_stream_out = new ByteArrayInputStream( in_buff );
@@ -228,8 +255,11 @@ public class SecureConnection
             //within RSA object
 
 
-            shared_secret = RSAenc.decrypt( returnMsg.getContent( ) ).getBytes( );
+            shared_secret = RSAenc.decrypt( returnMsg.getRSAresult( ) );
 
+            System.out.println( "RSA COMPUTER SHARED KEY: " + Arrays.toString( shared_secret ) );
+
+            System.out.println( "TRUE SHARED SECRET: " + Arrays.toString( SHARED_KEY ) );
             //testing
             //shared_secret = returnMsg.getContent( ).getBytes( );
             //testing
@@ -246,7 +276,7 @@ public class SecureConnection
         }
 
 
-        SHARED_KEY = shared_secret;
+        //SHARED_KEY = shared_secret;
 
     }
 
@@ -272,7 +302,7 @@ public class SecureConnection
             to_byte_stream.writeObject( msg );
             msg_bytes = byte_stream.toByteArray( );
 
-           
+
 //            try{
 //                CTR.setkey( SHARED_KEY );
 //                encrypted_msg_bytes = CTR.encryptMessage( msg_bytes );
@@ -554,7 +584,18 @@ public class SecureConnection
                             //now all further communication will be encrypted via AES
 
                             byte[] in_buff = new byte[ 8192 ];
-                            iis.read( in_buff, 0, 8192 );
+                            int num;
+
+//                            byte[] in_msg_bytes = new byte[ 8192*10 ];
+//
+//                            int total = 0;
+//                            while ( ( num = iis.read( in_buff, 0, 8192 ) ) > 0 ){
+//
+//                                System.arraycopy( in_buff, 0, in_msg_bytes, 0 + total, in_buff.length );
+//                                total += num;
+//                            }
+
+                            num = iis.read( in_buff, 0, in_buff.length );
 
                             ByteArrayInputStream byte_stream_out = new ByteArrayInputStream( in_buff );
                             ObjectInputStream from_byte_stream = new ObjectInputStream( byte_stream_out );
@@ -582,21 +623,14 @@ public class SecureConnection
                             }
 
 
-                            byte[] usersPubkey = msg.getContent( ).getBytes( );
+                            // byte[] usersPubkey = msg.getContent( ).getBytes( );
 
-                            String encryptedSharedSecret;
-
-                            //WHAT CALL WILL LOOK LIKE
-                            //encryptedSharedSecret = RSA.encrypt( usersPubkey, SHARED_KEY );
-                            //
+                            BigInteger encryptedSharedSecret;
 
 
-                            encryptedSharedSecret = RSAEncryption.encrypt( new BigInteger( msg.getPublicKey_moduls( ) ),
-                                                                           new BigInteger(
-                                                                                   msg.getPublicKey_exponent( ) ),
-                                                                           SHARED_KEY );
-                            //testing
-                            //encryptedSharedSecret = "ENCRYPTED SHARED SECRET".getBytes( );
+                            encryptedSharedSecret = RSAEncryption.encrypt( msg.getPublicKey_moduls( ),
+                                                                           msg.getPublicKey_exponent( ),
+                                                                           new BigInteger( SHARED_KEY ) );
 
 
                             ByteArrayOutputStream byte_stream_in = new ByteArrayOutputStream( );
@@ -605,8 +639,10 @@ public class SecureConnection
                             byte[] msg_bytes;
                             to_byte_stream.writeObject( new Message( MessageType.HANDSHAKE,
                                                                      ControllerUser,
-                                                                     ( encryptedSharedSecret ) ) );
+                                                                     ( null ) ).setRSAresult( encryptedSharedSecret ) );
                             msg_bytes = byte_stream_in.toByteArray( );
+
+                            System.out.println( "INSIDE p2PHANDLER SIZE OF RSA MSG: " + msg_bytes.length );
 
                             oos.write( msg_bytes, 0, msg_bytes.length );
 

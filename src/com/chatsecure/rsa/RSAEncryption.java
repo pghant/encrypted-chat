@@ -63,15 +63,15 @@ public class RSAEncryption {
 	/*
 	 * 
 	 */
-	public static String encrypt( BigInteger mod, BigInteger exp, byte[] plaintext )
+	public static BigInteger encrypt( BigInteger mod, BigInteger exp, BigInteger plaintext )
 	{
 
-		return ( new BigInteger( plaintext ) ).modPow( exp, mod ).toString( );
+		return ( ( plaintext ) ).modPow( exp, mod );
 	}
-	 
-	public String decrypt(String ciphertext)
+
+	public byte[] decrypt( BigInteger ciphertext )
 	{
-		return new String((new BigInteger(ciphertext)).modPow(d, n).toByteArray());
+		return ( ( ( ciphertext ) ).modPow( d, n ).toByteArray( ) );
 	}
 
 

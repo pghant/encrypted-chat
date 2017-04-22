@@ -230,6 +230,7 @@ public class ChatController
         Platform.runLater( ( ) -> {
 
             chatMessages.add( msg );
+            chatDisplay.scrollTo( chatMessages.indexOf( msg ) );
             syncrhonizeOnlineUsersList( msg.getUserList( ) );
 
         } );
@@ -361,18 +362,23 @@ public class ChatController
             } else{
                 StackPane pane = new StackPane( );
                 Rectangle rect = new Rectangle( );
-                Font f = Font.font( "KacstLetter", 18 );
-                Text text = new Text( item.getContent( ) );
-                text.setFont( f );
-                text.setWrappingWidth( 250 );
-                pane.getChildren( ).addAll( rect, text );
+
+
+                Font f = Font.font( "KacstLetter", 16 );
+                Text textContent = new Text( );
+                Text textName = new Text( );
+
+                textContent.setFont( f );
+                textName.setFont( f );
+
+
 
                 pane.setAlignment( Pos.CENTER );
-                text.setTextAlignment( TextAlignment.CENTER );
+                textContent.setTextAlignment( TextAlignment.CENTER );
 
-                text.setFill( Paint.valueOf( "white" ) );
-                rect.setHeight( text.getBoundsInLocal( ).getHeight( ) + 10 );
-                rect.setWidth( text.getBoundsInLocal( ).getWidth( ) + 20 );
+                textContent.setFill( Paint.valueOf( "white" ) );
+                textName.setFill( Paint.valueOf( "white" ) );
+
 
 
                 Light.Distant light = new Light.Distant( );
@@ -395,17 +401,54 @@ public class ChatController
                 rect.setEffect( lighting );
 
 
-                if ( ( onlineUsers.indexOf( item.getUser( ) ) % 2 ) == 1 ){
+                //Label label = new Label( item.getUser( ).getName( ) + ": " + item.getContent( ) );
+
+
+                textContent.setWrappingWidth( 280 );
+
+
+                if ( ( chatMessages.indexOf( item ) % 2 ) == 1 ){
                     //setNodeOrientation( NodeOrientation.LEFT_TO_RIGHT );
 
                     pane.setAlignment( Pos.CENTER_LEFT );
+
+                    textContent.setText( item.getContent( ) );
+                    textName.setText( item.getUser( ).getName( ) );
+                    textContent.setTextAlignment( TextAlignment.RIGHT );
                     rect.setFill( Color.web( "#2c9ac6" ) );
+                    rect.setHeight( textContent.getBoundsInLocal( ).getHeight( ) + 10 );
+                    rect.setWidth( textContent.getBoundsInLocal( ).getWidth( ) +
+                                   textName.getBoundsInLocal( ).getWidth( ) + 10 );
+//                    rect.setNodeOrientation( NodeOrientation.LEFT_TO_RIGHT );
+//                    text.setNodeOrientation( NodeOrientation.LEFT_TO_RIGHT );
+
+                    textName.setX( 0.0 );
+                    textContent.setX( textName.getBoundsInLocal( ).getWidth( ) + 20.0 );
                 } else{
                     //setNodeOrientation( NodeOrientation.RIGHT_TO_LEFT );
                     pane.setAlignment( Pos.CENTER_RIGHT );
+                    StackPane.setMargin( rect, new Insets( 0, 14, 0, 0 ) );
+                    StackPane.setMargin( textContent, new Insets( 0, 14, 0, 0 ) );
+                    StackPane.setMargin( textName, new Insets( 0, 14, 0, 0 ) );
+
+                    //String reversName = new StringBuilder( item.getUser().getName()+": " ).reverse().toString();
+                    textContent.setText( item.getContent( ) );
+                    textName.setText( item.getUser( ).getName( ) );
+                    textContent.setTextAlignment( TextAlignment.LEFT );
                     rect.setFill( Color.web( "#53d68e" ) );
+                    rect.setHeight( textContent.getBoundsInLocal( ).getHeight( ) + 10 );
+                    rect.setWidth(
+                            textContent.getBoundsInLocal( ).getWidth( ) + textName.getBoundsInLocal( ).getWidth( ) +
+                            10 );
+//                    rect.setNodeOrientation( NodeOrientation.RIGHT_TO_LEFT );
+//                    text.setNodeOrientation( NodeOrientation.RIGHT_TO_LEFT );
+                    textContent.setX( 0.0 );
+                    textName.setX( textContent.getBoundsInLocal( ).getWidth( ) + 20.0 );
+
                 }
 
+
+                pane.getChildren( ).addAll( rect, textContent, textName );
 
                 setGraphic( pane );
             }
@@ -428,7 +471,7 @@ public class ChatController
             } else{
 
                 Circle statusSymbol = null;
-                if ( item.equals( MessageReceiver.getUserSelf( ) ) ){
+                if ( item.getName( ).equals( MessageReceiver.getUserSelf( ).getName( ) ) ){
                     if ( myStatusSymbol == null ){
                         statusSymbol = myStatusSymbol = new Circle( 10 );
                     } else{
