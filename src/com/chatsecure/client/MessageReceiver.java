@@ -13,7 +13,7 @@ public class MessageReceiver implements Runnable
     private SecureConnection secureCon;
     private ChatController chatController;
     private String username;
-    
+
     private static User userSelf;
 
 
@@ -75,6 +75,7 @@ public class MessageReceiver implements Runnable
             throw e;
         }
 
+        chatController.addSelfUserToChat( userSelf );
 
     }
 
@@ -86,7 +87,7 @@ public class MessageReceiver implements Runnable
     public void run( ){
 
 
-        Message incoming_msg = null;
+        Message incoming_msg;
         while ( secureCon.isConnected( ) ){
 
             try{

@@ -13,7 +13,7 @@ public class Message implements Serializable{
     final private String content;
     private MessageType type;
     private ArrayList<User> userList = null;
-    private Status status = null;
+
 
 
 
@@ -27,7 +27,7 @@ public class Message implements Serializable{
     @Override
     public String toString( ){
         return String.format( "Message{ user: %1$s\ncontent: %2$s  type: %3$s" +
-                              "  status: %4$s}", user, content, type, status );
+                              "  status: %4$s}", user, content, type, getStatus( ) );
     }
 
 

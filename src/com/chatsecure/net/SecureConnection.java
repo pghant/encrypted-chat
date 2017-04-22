@@ -138,12 +138,13 @@ public class SecureConnection
                 doHandShake( );
             } catch ( IOException | ClassNotFoundException e ){
                 Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.SEVERE,
-                                                                            "Error Initialize :doHandShake()", e );
+                                                                            "Error Initialize:  doHandShake()", e );
                 throw e;
             }
         }
-        initialized.set( true );
 
+
+        initialized.set( true );
 
 
     }
@@ -254,7 +255,7 @@ public class SecureConnection
         writeMessage_( msg, stream_to_P2Pcoord );
     }
 
-    public void writeMessage( Message msg, OutputStream oos ) throws IOException{
+    private void writeMessage( Message msg, OutputStream oos ) throws IOException{
 
         writeMessage_( msg, oos );
     }
@@ -274,6 +275,7 @@ public class SecureConnection
             //message with AES128 counter mode using the shared key established in doHandShake
             // encrypted_msg_bytes = Encrypter.AESencrypt(SHARED_KEY,msg_bytes);
 
+
             //test call until encryption alg is implemented
             encrypted_msg_bytes = msg_bytes;
             //testing
@@ -292,7 +294,7 @@ public class SecureConnection
         return readMessage_( stream_from_P2Pcoord );
     }
 
-    public Message readMessage( InputStream iis ) throws IOException, ClassNotFoundException{
+    private Message readMessage( InputStream iis ) throws IOException, ClassNotFoundException{
         return readMessage_( iis );
     }
 
@@ -323,7 +325,6 @@ public class SecureConnection
 
 
     }
-
 
 
     public void closeConnection( ) throws IOException{
@@ -394,14 +395,15 @@ public class SecureConnection
 
             } else{
                 try{
-                    host_connections.get( threadID ).close( );
+
+                    online_users.remove( threadID );
+                    host_connections.remove( threadID ).close( );
                 } catch ( IOException e ){
                     Logger.getLogger( P2Plistener.class.toString( ) ).log( Level.SEVERE,
                                                                            "Socket close failed in P2Plistner" );
 
                 }
-                online_users.remove( threadID );
-                host_connections.remove( threadID );
+
             }
         }
 
@@ -422,27 +424,29 @@ public class SecureConnection
 
                 }
 
+                // !online_users.get( ID ).getName().equals( finalMsg.getUser( ).getName() )
 
-                //broadcast to everyone but sender
+                //broadcast to everyone
                 final Message finalMsg = msg;
+                System.out.println( "INSIDE BROADCAST--MSG: " + msg );
                 host_connections.forEach( ( ID, socketConn ) -> {
                     if ( finalMsg != null ){
-                        if ( online_users.get( ID ) != finalMsg.getUser( ) ){
 
-                            try{
-                                writeMessage( finalMsg, socketConn.getOutputStream( ) );
-                            } catch ( IOException e ){
-                                Logger.getLogger( this.getClass( ).toString( ) ).log( Level.SEVERE,
-                                                                                      "A broadcast message failed to send",
-                                                                                      e );
 
-                                //maybe kill the entire program here
+                        try{
+                            writeMessage( finalMsg, socketConn.getOutputStream( ) );
+                        } catch ( IOException e ){
+                            Logger.getLogger( this.getClass( ).toString( ) ).log( Level.SEVERE,
+                                                                                  "A broadcast message failed to send",
+                                                                                  e );
 
-                            }
-                            if ( finalMsg.getType( ) == MessageType.REMOVEUSER ){
-                                internalCloseConnection( ID );
-                            }
+                            //maybe kill the entire program here
+
                         }
+                        if ( finalMsg.getType( ) == MessageType.REMOVEUSER ){
+                            internalCloseConnection( ID );
+                        }
+
                     } else{
                         Logger.getLogger( this.getClass( ).toString( ) ).log( Level.WARNING,
                                                                               "Message extracted from outgoing message" +
@@ -512,7 +516,6 @@ public class SecureConnection
             P2Phandler( Socket connected_sock ){
                 System.out.println( "inside handler ctor" );
                 this.connected_sock = connected_sock;
-                host_connections.put( Thread.currentThread( ).getId( ), connected_sock );
 
 
             }
@@ -555,6 +558,7 @@ public class SecureConnection
                             connecteduser = msg.getUser( );
 
                             online_users.put( Thread.currentThread( ).getId( ), connecteduser );
+                            host_connections.put( Thread.currentThread( ).getId( ), connected_sock );
 
                             //if the userSelf connecting to P2P coordinator is the
                             //userSelf assuming role of p2P coordinator then no need
@@ -587,7 +591,6 @@ public class SecureConnection
                             msg_bytes = byte_stream_in.toByteArray( );
 
                             oos.write( msg_bytes, 0, msg_bytes.length );
-
 
 
                             outgoingMessages.put( msg.setType( MessageType.ADDUSER )

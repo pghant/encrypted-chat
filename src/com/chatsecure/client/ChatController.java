@@ -103,6 +103,7 @@ public class ChatController
             if ( t1 && !aBoolean ){
                 status_online_btn.setSelected( false );
                 myStatusSymbol.setFill( Paint.valueOf( "red" ) );
+                MessageReceiver.getUserSelf( ).setStatus( Status.AWAY );
             }
         } );
 
@@ -113,6 +114,7 @@ public class ChatController
 
                 status_away_btn.setSelected( false );
                 myStatusSymbol.setFill( Paint.valueOf( "green" ) );
+                MessageReceiver.getUserSelf( ).setStatus( Status.ONLINE );
             }
 
         } );
@@ -224,14 +226,21 @@ public class ChatController
 
 
     private void addMessageToChat( Message msg ){
-        Platform.runLater( ( ) -> chatMessages.add( msg ) );
+        Platform.runLater( ( ) -> {
+
+            chatMessages.add( msg );
+            syncrhonizeOnlineUsersList( msg.getUserList( ) );
+
+        } );
     }
 
     public void signOff( ){
         try{
             SecureConnection.getConnection( ).waitForInitialization( ).closeConnection( );
         } catch ( IOException e ){
-            System.exit( 0 );
+
+        } finally{
+            //Platform.exit( );
         }
     }
 
@@ -243,7 +252,13 @@ public class ChatController
     }
 
     private void removeUserFromChat( User user ){
-        Platform.runLater( ( ) -> onlineUsers.remove( user ) );
+        Platform.runLater( ( ) -> {
+            if ( user.getName( ).equals( MessageReceiver.getUserSelf( ).getName( ) ) ){
+                Platform.exit( );
+            }
+
+            onlineUsers.remove( user );
+        } );
 
 
 
@@ -379,7 +394,7 @@ public class ChatController
                 rect.setEffect( lighting );
 
 
-                if ( ( chatMessages.indexOf( item ) % 2 ) == 1 ){
+                if ( ( onlineUsers.indexOf( item.getUser( ) ) % 2 ) == 1 ){
                     //setNodeOrientation( NodeOrientation.LEFT_TO_RIGHT );
 
                     pane.setAlignment( Pos.CENTER_LEFT );
