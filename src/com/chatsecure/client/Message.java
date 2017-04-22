@@ -15,6 +15,10 @@ public class Message implements Serializable{
     private ArrayList<User> userList = null;
 
 
+    private String publicKey_moduls = null;
+    private String publicKey_exponent = null;
+
+
 
 
     public Message( MessageType type, User user, String content ){
@@ -41,7 +45,24 @@ public class Message implements Serializable{
         return this;
     }
 
+    public Message setPublicKey_moduls( final String publicKey_moduls ){
+        this.publicKey_moduls = publicKey_moduls;
+        return this;
+    }
 
+    public Message setPublicKey_exponent( final String publicKey_exponent ){
+        this.publicKey_exponent = publicKey_exponent;
+        return this;
+    }
+
+
+    public String getPublicKey_moduls( ){
+        return publicKey_moduls;
+    }
+
+    public String getPublicKey_exponent( ){
+        return publicKey_exponent;
+    }
 
     public User getUser( ){
         return user;

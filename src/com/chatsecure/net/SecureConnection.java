@@ -1,11 +1,14 @@
 package com.chatsecure.net;
 
+import com.chatsecure.aes.CTR;
 import com.chatsecure.client.Message;
 import com.chatsecure.client.MessageType;
 import com.chatsecure.client.Status;
 import com.chatsecure.client.User;
+import com.chatsecure.rsa.RSAEncryption;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -180,16 +183,11 @@ public class SecureConnection
     }
 
     private void doHandShake( ) throws IOException, ClassNotFoundException{
-        byte[] pubkey;
 
         byte[] shared_secret;
 
-        //EXAMPLE of what call will look like
-        //pubkey=RSA.get_public_key()
+        RSAEncryption RSAenc = new RSAEncryption( );
 
-        //testing
-        pubkey = "PUBLIC_KEY_VALUE".getBytes( );
-        //testing
 
 
         try{
@@ -202,7 +200,11 @@ public class SecureConnection
             byte[] msg_bytes;
             to_byte_stream.writeObject( new Message( MessageType.HANDSHAKE,
                                                      userSelf,
-                                                     byteToString( pubkey ) ) );
+                                                     null )
+                                                .setPublicKey_exponent(
+                                                        RSAenc.getPublicKey( ).get( "exp" ).toString( ) )
+                                                .setPublicKey_moduls(
+                                                        RSAenc.getPublicKey( ).get( "mod" ).toString( ) ) );
             msg_bytes = byte_stream_in.toByteArray( );
 
             stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
@@ -227,10 +229,10 @@ public class SecureConnection
             //within RSA object
 
 
-            //shared_secret=RSA.decryptSharedSecret(returnMsg.getContent().getBytes())
+            shared_secret = RSAenc.decrypt( returnMsg.getContent( ) ).getBytes( );
 
             //testing
-            shared_secret = returnMsg.getContent( ).getBytes( );
+            //shared_secret = returnMsg.getContent( ).getBytes( );
             //testing
 
 
@@ -263,7 +265,7 @@ public class SecureConnection
 
     private void writeMessage_( Message msg, OutputStream oos ) throws IOException{
         byte[] msg_bytes;
-        byte[] encrypted_msg_bytes;
+        byte[] encrypted_msg_bytes = null;
 
         try ( ByteArrayOutputStream byte_stream = new ByteArrayOutputStream( );
               ObjectOutputStream to_byte_stream = new ObjectOutputStream( byte_stream ) ){
@@ -275,11 +277,20 @@ public class SecureConnection
             //message with AES128 counter mode using the shared key established in doHandShake
             // encrypted_msg_bytes = Encrypter.AESencrypt(SHARED_KEY,msg_bytes);
 
+            try{
+                CTR.setkey( SHARED_KEY );
+                encrypted_msg_bytes = CTR.encryptMessage( msg_bytes );
+            } catch ( Exception e ){
+                // TODO Auto-generated catch block
+                e.printStackTrace( );
+            }
 
             //test call until encryption alg is implemented
-            encrypted_msg_bytes = msg_bytes;
+            //encrypted_msg_bytes = msg_bytes;
             //testing
 
+
+            assert encrypted_msg_bytes != null : "CTR.encryptMessage returned null";
 
             oos.write( encrypted_msg_bytes );
 
@@ -301,7 +312,7 @@ public class SecureConnection
 
     private Message readMessage_( InputStream iis ) throws IOException, ClassNotFoundException{
 
-        byte[] decrypted_msg_bytes;
+        byte[] decrypted_msg_bytes = null;
 
 
         byte[] encrypted_msg_bytes = new byte[ 8192 ];
@@ -313,10 +324,18 @@ public class SecureConnection
         //shared key established in doHandShake
         //decrypted_msg_bytes = Encrypter.AESdecrypt(SHARED_KEY,encrypted_msg_bytes);
 
+        try{
+            CTR.setkey( SHARED_KEY );
+            decrypted_msg_bytes = CTR.decryptMessage( encrypted_msg_bytes );
+        } catch ( Exception e1 ){
+            // TODO Auto-generated catch block
+            e1.printStackTrace( );
+        }
 
-        decrypted_msg_bytes = encrypted_msg_bytes;
+        assert decrypted_msg_bytes != null : "CTR.decrypt returned null";
 
-        Message returnMsg;
+        //decrypted_msg_bytes = encrypted_msg_bytes;
+
 
         ByteArrayInputStream byte_stream_out = new ByteArrayInputStream( decrypted_msg_bytes );
         ObjectInputStream from_byte_stream = new ObjectInputStream( byte_stream_out );
@@ -571,14 +590,19 @@ public class SecureConnection
 
                             byte[] usersPubkey = msg.getContent( ).getBytes( );
 
-                            byte[] encryptedSharedSecret;
+                            String encryptedSharedSecret;
 
                             //WHAT CALL WILL LOOK LIKE
                             //encryptedSharedSecret = RSA.encrypt( usersPubkey, SHARED_KEY );
                             //
 
+
+                            encryptedSharedSecret = RSAEncryption.encrypt( new BigInteger( msg.getPublicKey_moduls( ) ),
+                                                                           new BigInteger(
+                                                                                   msg.getPublicKey_exponent( ) ),
+                                                                           SHARED_KEY );
                             //testing
-                            encryptedSharedSecret = "ENCRYPTED SHARED SECRET".getBytes( );
+                            //encryptedSharedSecret = "ENCRYPTED SHARED SECRET".getBytes( );
 
 
                             ByteArrayOutputStream byte_stream_in = new ByteArrayOutputStream( );
@@ -587,7 +611,7 @@ public class SecureConnection
                             byte[] msg_bytes;
                             to_byte_stream.writeObject( new Message( MessageType.HANDSHAKE,
                                                                      ControllerUser,
-                                                                     byteToString( encryptedSharedSecret ) ) );
+                                                                     ( encryptedSharedSecret ) ) );
                             msg_bytes = byte_stream_in.toByteArray( );
 
                             oos.write( msg_bytes, 0, msg_bytes.length );
