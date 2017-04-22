@@ -99,37 +99,26 @@ public class ChatController
 
 
         status_away_btn.selectedProperty( ).addListener( ( observableValue, aBoolean, t1 ) -> {
-            System.out.println( observableValue );
-            System.out.println( aBoolean );
-            System.out.println( t1 );
 
-            myStatusSymbol.setFill( Paint.valueOf( "red" ) );
-
-            status_online_btn.setSelected(false);
+            if ( t1 && !aBoolean ){
+                status_online_btn.setSelected( false );
+                myStatusSymbol.setFill( Paint.valueOf( "red" ) );
+                MessageReceiver.getUserSelf( ).setStatus( Status.AWAY );
+            }
         } );
 
         status_online_btn.selectedProperty( ).addListener( ( observableValue, aBoolean, t1 ) -> {
-            System.out.println( observableValue );
-            System.out.println( aBoolean );
-            System.out.println( t1 );
 
-            myStatusSymbol.setFill( Paint.valueOf( "green" ) );
-            status_away_btn.setSelected(false);
+
+            if ( t1 && !aBoolean ){
+
+                status_away_btn.setSelected( false );
+                myStatusSymbol.setFill( Paint.valueOf( "green" ) );
+                MessageReceiver.getUserSelf( ).setStatus( Status.ONLINE );
+            }
+
         } );
 
-
-//        status_away_btn.addEventHandler( EventType.ROOT, event -> {
-//
-//
-//            updateSelfStatusInChat( (CheckMenuItem) event.getSource( ) );
-//
-//
-//        } );
-//
-//
-//        status_online_btn.addEventHandler( EventType.ROOT, event -> {
-//            updateSelfStatusInChat( (CheckMenuItem) event.getSource( ) );
-//        } );
 
 
         chatDisplay.setItems( chatMessages );
@@ -186,7 +175,8 @@ public class ChatController
         if ( !msg_content.isEmpty( ) ){
             Message currMsg = new Message( MessageType.USER, MessageReceiver.getUserSelf( ), msg_content );
 
-            addMessageToChat( currMsg );
+
+            sendToP2Pcoordinator( currMsg );
 
             msgTextArea.clear( );
         }
@@ -194,39 +184,84 @@ public class ChatController
     }
 
 
-    private void sendToP2Pcoordinator( Message msg ) throws IOException{
+    public void sendToP2Pcoordinator( Message msg ) throws IOException{
 
-        SecureConnection.getConnection( ).waitForInitialization( );//.writeMessage( msg );
+        System.out.println( "chatcontroller: sendToP2Pcoordinator " );
+
+        Thread writerThread = new Thread( ( ) -> {
+            try{
+                SecureConnection.getConnection( ).waitForInitialization( ).writeMessage( msg );
+            } catch ( IOException e ){
+                Logger.getLogger( MessageReceiver.class.toString( ) ).log( Level.SEVERE,
+                                                                           "SendtoP2Pcoordinator error" );
+            }
+        } );
+
+        writerThread.setName( "WRITER_THREAD" );
+
+        writerThread.start( );
+
 
 
     }
 
-    public void updateChatRoomState( ){
+    public void updateChatRoomState( MessageType type, Message msg ){
+
+        switch ( type ){
+            case USER:
+                addMessageToChat( msg );
+                break;
+            case REMOVEUSER:
+                removeUserFromChat( msg.getUser( ) );
+                break;
+            case ADDUSER:
+                addNewUserToChat( msg.getUser( ) );
+                break;
+            case STATUS:
+                updateOnlineUsersStatusInChat( msg.getUser( ) );
+                break;
+        }
+
 
     }
 
-    public void TESTADDUSER( ){
-        addNewUserToChat( MessageReceiver.getUserSelf( ) );
-    }
 
     private void addMessageToChat( Message msg ){
-        chatMessages.add( msg );
+        Platform.runLater( ( ) -> {
+
+            chatMessages.add( msg );
+            chatDisplay.scrollTo( chatMessages.indexOf( msg ) );
+            syncrhonizeOnlineUsersList( msg.getUserList( ) );
+
+        } );
     }
 
-    private void signOff( ){
+    public void signOff( ){
         try{
             SecureConnection.getConnection( ).waitForInitialization( ).closeConnection( );
         } catch ( IOException e ){
-            System.exit( 0 );
+
+        } finally{
+            //Platform.exit( );
         }
     }
 
+    public void addSelfUserToChat( User user ){
+        Platform.runLater( ( ) -> addNewUserToChat( user ) );
+    }
     private void addNewUserToChat( User user ){
-        onlineUsers.add( user );
+        Platform.runLater( ( ) -> onlineUsers.add( user ) );
     }
 
     private void removeUserFromChat( User user ){
-        onlineUsers.remove( user );
+        Platform.runLater( ( ) -> {
+            if ( user.getName( ).equals( MessageReceiver.getUserSelf( ).getName( ) ) ){
+                Platform.exit( );
+            }
+
+            onlineUsers.remove( user );
+        } );
+
 
 
     }
@@ -288,16 +323,22 @@ public class ChatController
 //        onlineUsers.sort( Comparator.comparing( User::getName ) );
 //        userList.sort( Comparator.comparing( User::getName ) );
 
-        onlineUsers.setAll( userList );
+        Platform.runLater( ( ) -> onlineUsers.setAll( userList ) );
+
 
     }
 
     private void updateOnlineUsersStatusInChat( User user ){
-        onlineUsers.forEach( user1 -> {
-            if ( user1.getName( ).equals( user.getName( ) ) ){
-                user1.setStatus( user.getStatus( ) );
-            }
+        Platform.runLater( ( ) -> {
+
+            onlineUsers.forEach( user1 -> {
+                if ( user1.getName( ).equals( user.getName( ) ) ){
+                    user1.setStatus( user.getStatus( ) );
+                }
+            } );
+
         } );
+
     }
 
 
@@ -321,18 +362,23 @@ public class ChatController
             } else{
                 StackPane pane = new StackPane( );
                 Rectangle rect = new Rectangle( );
-                Font f = Font.font( "KacstLetter", 18 );
-                Text text = new Text( item.getContent( ) );
-                text.setFont( f );
-                text.setWrappingWidth( 250 );
-                pane.getChildren( ).addAll( rect, text );
+
+
+                Font f = Font.font( "KacstLetter", 16 );
+                Text textContent = new Text( );
+                Text textName = new Text( );
+
+                textContent.setFont( f );
+                textName.setFont( f );
+
+
 
                 pane.setAlignment( Pos.CENTER );
-                text.setTextAlignment( TextAlignment.CENTER );
+                textContent.setTextAlignment( TextAlignment.CENTER );
 
-                text.setFill( Paint.valueOf( "white" ) );
-                rect.setHeight( text.getBoundsInLocal( ).getHeight( ) + 10 );
-                rect.setWidth( text.getBoundsInLocal( ).getWidth( ) + 20 );
+                textContent.setFill( Paint.valueOf( "white" ) );
+                textName.setFill( Paint.valueOf( "white" ) );
+
 
 
                 Light.Distant light = new Light.Distant( );
@@ -355,17 +401,54 @@ public class ChatController
                 rect.setEffect( lighting );
 
 
+                //Label label = new Label( item.getUser( ).getName( ) + ": " + item.getContent( ) );
+
+
+                textContent.setWrappingWidth( 280 );
+
+
                 if ( ( chatMessages.indexOf( item ) % 2 ) == 1 ){
                     //setNodeOrientation( NodeOrientation.LEFT_TO_RIGHT );
 
                     pane.setAlignment( Pos.CENTER_LEFT );
+
+                    textContent.setText( item.getContent( ) );
+                    textName.setText( item.getUser( ).getName( ) );
+                    textContent.setTextAlignment( TextAlignment.RIGHT );
                     rect.setFill( Color.web( "#2c9ac6" ) );
+                    rect.setHeight( textContent.getBoundsInLocal( ).getHeight( ) + 10 );
+                    rect.setWidth( textContent.getBoundsInLocal( ).getWidth( ) +
+                                   textName.getBoundsInLocal( ).getWidth( ) + 10 );
+//                    rect.setNodeOrientation( NodeOrientation.LEFT_TO_RIGHT );
+//                    text.setNodeOrientation( NodeOrientation.LEFT_TO_RIGHT );
+
+                    textName.setX( 0.0 );
+                    textContent.setX( textName.getBoundsInLocal( ).getWidth( ) + 20.0 );
                 } else{
                     //setNodeOrientation( NodeOrientation.RIGHT_TO_LEFT );
                     pane.setAlignment( Pos.CENTER_RIGHT );
+                    StackPane.setMargin( rect, new Insets( 0, 14, 0, 0 ) );
+                    StackPane.setMargin( textContent, new Insets( 0, 14, 0, 0 ) );
+                    StackPane.setMargin( textName, new Insets( 0, 14, 0, 0 ) );
+
+                    //String reversName = new StringBuilder( item.getUser().getName()+": " ).reverse().toString();
+                    textContent.setText( item.getContent( ) );
+                    textName.setText( item.getUser( ).getName( ) );
+                    textContent.setTextAlignment( TextAlignment.LEFT );
                     rect.setFill( Color.web( "#53d68e" ) );
+                    rect.setHeight( textContent.getBoundsInLocal( ).getHeight( ) + 10 );
+                    rect.setWidth(
+                            textContent.getBoundsInLocal( ).getWidth( ) + textName.getBoundsInLocal( ).getWidth( ) +
+                            10 );
+//                    rect.setNodeOrientation( NodeOrientation.RIGHT_TO_LEFT );
+//                    text.setNodeOrientation( NodeOrientation.RIGHT_TO_LEFT );
+                    textContent.setX( 0.0 );
+                    textName.setX( textContent.getBoundsInLocal( ).getWidth( ) + 20.0 );
+
                 }
 
+
+                pane.getChildren( ).addAll( rect, textContent, textName );
 
                 setGraphic( pane );
             }
@@ -388,7 +471,7 @@ public class ChatController
             } else{
 
                 Circle statusSymbol = null;
-                if ( item.equals( MessageReceiver.getUserSelf( ) ) ){
+                if ( item.getName( ).equals( MessageReceiver.getUserSelf( ).getName( ) ) ){
                     if ( myStatusSymbol == null ){
                         statusSymbol = myStatusSymbol = new Circle( 10 );
                     } else{
