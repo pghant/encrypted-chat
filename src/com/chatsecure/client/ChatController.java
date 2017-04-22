@@ -197,6 +197,7 @@ public class ChatController
             }
         } );
 
+        writerThread.setName( "WRITER_THREAD" );
 
         writerThread.start( );
 
