@@ -101,7 +101,7 @@
             <menus>
                 <Menu mnemonicParsing="false" text="File">
                     <items>
-                        <MenuItem fx:id="menu_close_btn" mnemonicParsing="false" text="Close"/>
+                        <MenuItem fx:id="menu_close_btn" mnemonicParsing="false" onAction="#signOff" text="Close"/>
                     </items>
                 </Menu>
                 <Menu fx:id="status_menu" mnemonicParsing="false" text="Status">

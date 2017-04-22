@@ -26,8 +26,8 @@ public class Message implements Serializable{
 
     @Override
     public String toString( ){
-        return String.format( "Message{ user: %1$s\ncontent: %2$s\ntype: %3$s" +
-                              "\nstatus: %4$s}", user, content, type, status );
+        return String.format( "Message{ user: %1$s\ncontent: %2$s  type: %3$s" +
+                              "  status: %4$s}", user, content, type, status );
     }
 
 

@@ -7,20 +7,23 @@ import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 
-public class GUI extends Application {
+
+public class GUI extends Application
+{
 
     private static Stage theStage;
 
     private Thread t;
+
     public static Stage getPrimaryStage( ){
         return theStage;
     }
 
 
-
     @Override
-    public void start(Stage primaryStage) throws Exception{
+    public void start( Stage primaryStage ) throws Exception{
 
         FXMLLoader loader = new FXMLLoader( getClass( ).getResource( "resources/views/chat_window.fxml" ) );
 
@@ -28,12 +31,11 @@ public class GUI extends Application {
 
         ChatController controller = loader.getController( );
 
-        BorderPane actualRoot = (BorderPane)root;
+        BorderPane actualRoot = (BorderPane) root;
 
 
         //to access stage from other classes; set new to chat display after login screen
         theStage = primaryStage;
-
 
 
 //
@@ -78,6 +80,8 @@ public class GUI extends Application {
 
 
         //primaryStage.setFullScreen( true );
+
+
         Scene scene = new Scene( root );
 
 
@@ -143,21 +147,79 @@ public class GUI extends Application {
 
         //
 
-        primaryStage.setTitle("SecureChat");
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        // ServerSocket serv = new ServerSocket( 5463 );
+//        final Socket[] remoteSock = new Socket[ 1 ];
+//
+//        Thread t = new Thread( ( ) -> {
+//            try{
+//                remoteSock[ 0 ] = serv.accept( );
+//            } catch ( IOException e ){
+//                e.printStackTrace( );
+//            }
+//        } );
+//         t.start();
+
+//
+//        Socket localSock = new Socket( "192.168.1.2", 5463 );
+//        Socket remoteSock = serv.accept();
+//        OutputStream localOutStream = localSock.getOutputStream();
+//        InputStream localInStream = localSock.getInputStream();
+//
+//        OutputStream remoteOutStream = remoteSock.getOutputStream( );
+//        InputStream remoteInStream = remoteSock.getInputStream( );
+//
+//        Message msg = new Message( MessageType.USER, new User( "JPC", Status.ONLINE ), "attack at dawn" );
+//        ByteArrayOutputStream byte_stream_in = new ByteArrayOutputStream( );
+//        ObjectOutputStream to_byte_stream = new ObjectOutputStream( byte_stream_in );
+//
+//        byte[] msg_bytes;
+//        to_byte_stream.writeObject( msg );
+//        msg_bytes = byte_stream_in.toByteArray( );
+//
+//        localOutStream.write( msg_bytes,0,msg_bytes.length );
+//
+//
+//        byte[] in_buff = new byte[ 8192 ];
+//        remoteInStream.read( in_buff, 0, 8192 );
+//
+//        Message new_msg;
+//
+//         ByteArrayInputStream byte_stream_out = new ByteArrayInputStream( in_buff );
+//              ObjectInputStream from_byte_stream = new ObjectInputStream( byte_stream_out );
+//
+//            new_msg = (Message) from_byte_stream.readObject( );
+//
+//        System.out.println("TESTING OUTPUT: "+new_msg );
+//
+
+
+        primaryStage.setTitle( "SecureChat" );
+        primaryStage.setScene( scene );
+        primaryStage.show( );
 
 
         MessageReceiver rcvr;
 
-        t = new Thread( (rcvr= new MessageReceiver(5323, controller, "JPC")));
-        t.setDaemon(true);
+        t = new Thread( ( rcvr = new MessageReceiver( 5323, controller, "JPC" ) ) );
+
+        t.setName( "MSG-RCVR" );
         t.start();
 
+        Thread t2 = new Thread( ( ) -> {
+            try{
+                controller.sendToP2Pcoordinator( new Message( MessageType.USER, MessageReceiver.getUserSelf( )
+                        , "hello old boy" ) );
+            } catch ( IOException e ){
+                e.printStackTrace( );
+            }
+        } );
+
+        t2.setName( "TEST-SENDER" );
+        t2.start( );
     }
 
 
-    public static void main(String[] args) {
-        launch(args);
+    public static void main( String[] args ){
+        launch( args );
     }
 }

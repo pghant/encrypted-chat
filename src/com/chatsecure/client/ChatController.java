@@ -173,7 +173,8 @@ public class ChatController
         if ( !msg_content.isEmpty( ) ){
             Message currMsg = new Message( MessageType.USER, MessageReceiver.getUserSelf( ), msg_content );
 
-            addMessageToChat( currMsg );
+
+            sendToP2Pcoordinator( currMsg );
 
             msgTextArea.clear( );
         }
@@ -181,23 +182,52 @@ public class ChatController
     }
 
 
-    private void sendToP2Pcoordinator( Message msg ) throws IOException{
+    public void sendToP2Pcoordinator( Message msg ) throws IOException{
 
-        SecureConnection.getConnection( ).waitForInitialization( );//.writeMessage( msg );
+        System.out.println( "chatcontroller: sendToP2Pcoordinator " );
+
+        Thread writerThread = new Thread( ( ) -> {
+            try{
+                SecureConnection.getConnection( ).waitForInitialization( ).writeMessage( msg );
+            } catch ( IOException e ){
+                Logger.getLogger( MessageReceiver.class.toString( ) ).log( Level.SEVERE,
+                                                                           "SendtoP2Pcoordinator error" );
+            }
+        } );
+
+
+        writerThread.start( );
+
 
 
     }
 
-    public void updateChatRoomState( ){
+    public void updateChatRoomState( MessageType type, Message msg ){
+
+        switch ( type ){
+            case USER:
+                addMessageToChat( msg );
+                break;
+            case REMOVEUSER:
+                removeUserFromChat( msg.getUser( ) );
+                break;
+            case ADDUSER:
+                addNewUserToChat( msg.getUser( ) );
+                break;
+            case STATUS:
+                updateOnlineUsersStatusInChat( msg.getUser( ) );
+                break;
+        }
+
 
     }
 
 
     private void addMessageToChat( Message msg ){
-        chatMessages.add( msg );
+        Platform.runLater( ( ) -> chatMessages.add( msg ) );
     }
 
-    private void signOff( ){
+    public void signOff( ){
         try{
             SecureConnection.getConnection( ).waitForInitialization( ).closeConnection( );
         } catch ( IOException e ){
@@ -209,11 +239,12 @@ public class ChatController
         Platform.runLater( ( ) -> addNewUserToChat( user ) );
     }
     private void addNewUserToChat( User user ){
-        onlineUsers.add( user );
+        Platform.runLater( ( ) -> onlineUsers.add( user ) );
     }
 
     private void removeUserFromChat( User user ){
-        onlineUsers.remove( user );
+        Platform.runLater( ( ) -> onlineUsers.remove( user ) );
+
 
 
     }
@@ -275,16 +306,22 @@ public class ChatController
 //        onlineUsers.sort( Comparator.comparing( User::getName ) );
 //        userList.sort( Comparator.comparing( User::getName ) );
 
-        onlineUsers.setAll( userList );
+        Platform.runLater( ( ) -> onlineUsers.setAll( userList ) );
+
 
     }
 
     private void updateOnlineUsersStatusInChat( User user ){
-        onlineUsers.forEach( user1 -> {
-            if ( user1.getName( ).equals( user.getName( ) ) ){
-                user1.setStatus( user.getStatus( ) );
-            }
+        Platform.runLater( ( ) -> {
+
+            onlineUsers.forEach( user1 -> {
+                if ( user1.getName( ).equals( user.getName( ) ) ){
+                    user1.setStatus( user.getStatus( ) );
+                }
+            } );
+
         } );
+
     }
 
 

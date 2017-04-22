@@ -13,10 +13,9 @@ public class MessageReceiver implements Runnable
     private SecureConnection secureCon;
     private ChatController chatController;
     private String username;
+    
+    private static User userSelf;
 
-    //TESTING INIT
-    private static User userSelf = new User( "JPC", Status.ONLINE );
-//testing
 
     /**
      * constructor called by the userSelf who is assuming role is P2P coordinator
@@ -76,8 +75,6 @@ public class MessageReceiver implements Runnable
             throw e;
         }
 
-        chatController.addSelfUserToChat( userSelf );
-
 
     }
 
@@ -89,48 +86,32 @@ public class MessageReceiver implements Runnable
     public void run( ){
 
 
-        Message incoming_msg;
+        Message incoming_msg = null;
         while ( secureCon.isConnected( ) ){
 
             try{
+
                 incoming_msg = secureCon.readMessage( );
 
-                if ( incoming_msg == null ){
-                    throw new IOException( "readMessage returned null" );
-                }
-            } catch ( IOException | ClassNotFoundException e ){
+
+            } catch ( IOException e ){
                 Logger.getLogger( MessageReceiver.class.toString( ) ).log( Level.SEVERE,
                                                                            "Error in MessageReceiver" +
                                                                            " reading new message",
                                                                            e );
                 //returning will kill thread
                 break;
-            } finally{
-                //use chatController to show error message then exit
+            } catch ( ClassNotFoundException e ){
+                Logger.getLogger( MessageReceiver.class.toString( ) ).log( Level.SEVERE,
+                                                                           "Error in MessageReceiver" +
+                                                                           " reading new message",
+                                                                           e );
+                break;
             }
 
-            switch ( incoming_msg.getType( ) ){
+            assert incoming_msg != null;
+            chatController.updateChatRoomState( incoming_msg.getType( ), incoming_msg );
 
-                case USER:
-                    //get userList attached to message and compare against our current list
-                    //because if you sign on last then you won't get ADDUSER messages from
-                    //people already signed on so you'll need to get userlist this way
-                    break;
-                case REMOVEUSER:
-                    //here we don't need to compare the entire attached userList with our
-                    //current list; just remove userSelf from onlineUsers list
-                    break;
-                case ADDUSER:
-                    //here we don't need to compare the entire attached userList with our
-                    //current list; just append the userSelf onto onlineUsers list
-                    break;
-                case STATUS:
-                    break;
-                case HANDSHAKE:
-                    break;
-                case MIGRATECONTROLLER:
-                    break;
-            }
 
 
         }

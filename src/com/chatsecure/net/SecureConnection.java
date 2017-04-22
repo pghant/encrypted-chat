@@ -9,7 +9,6 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.security.SecureRandom;
@@ -36,8 +35,8 @@ public class SecureConnection
     private String hostAddr;
     private Integer portNum;
     private Socket userSocket = null;
-    private ObjectOutputStream stream_to_P2Pcoord;
-    private ObjectInputStream stream_from_P2Pcoord;
+    private OutputStream stream_to_P2Pcoord;
+    private InputStream stream_from_P2Pcoord;
     private User userSelf;
     private static final SecureConnection theInstance = new SecureConnection( );
 
@@ -49,8 +48,6 @@ public class SecureConnection
     private static byte[] SHARED_KEY = new byte[ 16 ];
 
 
-
-
     public static SecureConnection getConnection( ){
 
         return theInstance;
@@ -58,9 +55,6 @@ public class SecureConnection
 
     private SecureConnection( ){
     }
-
-
-
 
 
     /**
@@ -89,7 +83,8 @@ public class SecureConnection
      * @param port_num             port number for SecureChat app
      * @param becomeP2Pcoordinator flag to indicate if you are the sole P2P coordinator for a chat room
      */
-    public synchronized void initalize( String host_addr, User new_user, int port_num, boolean becomeP2Pcoordinator ) throws
+    public void initalize( String host_addr, User new_user, int port_num,
+                           boolean becomeP2Pcoordinator ) throws
             IOException, ClassNotFoundException{
 
         //if userSocket is not null then SecureConnection already initialized so just return
@@ -101,6 +96,11 @@ public class SecureConnection
         hostAddr = host_addr;
         portNum = port_num;
 
+        ByteArrayOutputStream byte_stream_in = new ByteArrayOutputStream( );
+        ObjectOutputStream to_byte_stream = new ObjectOutputStream( byte_stream_in );
+
+        byte[] msg_bytes;
+
 
         if ( becomeP2Pcoordinator ){
             //generate random 128-bit key for AES128 that will be shared with all clients using RSA and
@@ -110,40 +110,29 @@ public class SecureConnection
 
             Long myID = Thread.currentThread( ).getId( );
             coordinator = new Thread( new P2Pcoordinator( myID ) );
-            coordinator.setDaemon(true);
+            coordinator.setDaemon( true );
             coordinator.start( );
 
 
+            userSocket = new Socket( hostAddr, portNum );
             //start coordinator then connect where hostAddr is localAddr so
             //coordinator will handle connection same way it would handle
             //connection from remote host.
-            while ( true ){
-                try{
-                    //chance that P2P coordinator may not have started P2P listener
-                    //quick enough and this call will throw, so loop on socketExceptions
-                    //until sucessful
-                    userSocket = new Socket( hostAddr, portNum );
-                } catch ( SocketException e ){
-                    Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.INFO,
-                                                                                "Looping waiting for p2p" +
-                                                                                " listener to start", e );
-                    continue;
-                }
-                break;
 
-            }
-            stream_to_P2Pcoord = new ObjectOutputStream( userSocket.getOutputStream( ) );
-            stream_from_P2Pcoord = new ObjectInputStream( userSocket.getInputStream( ) );
+            stream_to_P2Pcoord = userSocket.getOutputStream( );
+            stream_from_P2Pcoord = userSocket.getInputStream( );
 
+            to_byte_stream.writeObject( new Message( MessageType.SELFCONNECTION,
+                                                     userSelf, null ) );
+            msg_bytes = byte_stream_in.toByteArray( );
 
-            stream_to_P2Pcoord.writeObject( new Message( MessageType.SELFCONNECTION,
-                                                         userSelf, null ) );
+            stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
 
         } else{
             userSocket = new Socket( hostAddr, portNum );
-            stream_to_P2Pcoord = new ObjectOutputStream( userSocket.getOutputStream( ) );
+            stream_to_P2Pcoord = userSocket.getOutputStream( );
 
-            stream_from_P2Pcoord = new ObjectInputStream( userSocket.getInputStream( ) );
+            stream_from_P2Pcoord = userSocket.getInputStream( );
 
             try{
                 doHandShake( );
@@ -153,8 +142,9 @@ public class SecureConnection
                 throw e;
             }
         }
+        initialized.set( true );
 
-        notifyAll( );
+
 
     }
 
@@ -162,20 +152,12 @@ public class SecureConnection
         return userSocket.isConnected( );
     }
 
-    public synchronized SecureConnection waitForInitialization( ){
+    public SecureConnection waitForInitialization( ){
 
 
         while ( !initialized.get( ) ){
-            try{
 
-
-                wait( );
-
-            } catch ( InterruptedException e ){
-                Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.WARNING,
-                                                                            "SecureConnection interrupted wait", e );
-
-            }
+            //busy wait if not yet initialized--will be quick
         }
 
         return this;
@@ -213,13 +195,29 @@ public class SecureConnection
 
             //sending public key to P2P coordinator; so this is the first thing com.chatsecure.client sends to
             //p2p coordinator after connecting in initialize
+            ByteArrayOutputStream byte_stream_in = new ByteArrayOutputStream( );
+            ObjectOutputStream to_byte_stream = new ObjectOutputStream( byte_stream_in );
 
-            stream_to_P2Pcoord.writeObject( new Message( MessageType.HANDSHAKE,
-                                                         userSelf,
-                                                         byteToString( pubkey ) ) );
+            byte[] msg_bytes;
+            to_byte_stream.writeObject( new Message( MessageType.HANDSHAKE,
+                                                     userSelf,
+                                                     byteToString( pubkey ) ) );
+            msg_bytes = byte_stream_in.toByteArray( );
 
-//
-            Message returnMsg = (Message) stream_from_P2Pcoord.readObject( );
+            stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
+
+
+            byte[] in_buff = new byte[ 8192 ];
+            int num;
+            num = stream_from_P2Pcoord.read( in_buff, 0, 8192 );
+
+            Message returnMsg;
+
+            ByteArrayInputStream byte_stream_out = new ByteArrayInputStream( in_buff );
+            ObjectInputStream from_byte_stream = new ObjectInputStream( byte_stream_out );
+
+            returnMsg = (Message) from_byte_stream.readObject( );
+
 
             assert returnMsg.getType( ) ==
                    MessageType.HANDSHAKE : "doHandShake got back wrong message type from P2P coordinator";
@@ -251,19 +249,18 @@ public class SecureConnection
     }
 
 
-
     public void writeMessage( Message msg ) throws IOException{
 
-        writeMessage_( msg, null );
+        writeMessage_( msg, stream_to_P2Pcoord );
     }
 
-    public void writeMessage( Message msg, ObjectOutputStream oos ) throws IOException{
+    public void writeMessage( Message msg, OutputStream oos ) throws IOException{
 
         writeMessage_( msg, oos );
     }
 
 
-    synchronized private void writeMessage_( Message msg, ObjectOutputStream oos ) throws IOException{
+    private void writeMessage_( Message msg, OutputStream oos ) throws IOException{
         byte[] msg_bytes;
         byte[] encrypted_msg_bytes;
 
@@ -282,7 +279,7 @@ public class SecureConnection
             //testing
 
 
-            ( ( oos != null ) ? oos : stream_to_P2Pcoord ).write( encrypted_msg_bytes );
+            oos.write( encrypted_msg_bytes );
 
         } catch ( IOException e ){
             Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.SEVERE, "Error in WriteMessage()", e );
@@ -290,91 +287,44 @@ public class SecureConnection
         }
     }
 
-    /**
-     * helper function to read in all bytes from input stream without knowing how many bytes in stream;
-     * this is needed because calls to ObjectInputStream.read will block until data shows up and so there is
-     * no way to know number of bytes in stream before blocking
-     *
-     * @return byte[]
-     *
-     * @throws IOException
-     */
-    private byte[] consumeAllBytesFromInputStream( ObjectInputStream iis ) throws IOException{
-        ArrayList<Byte> byte_array = new ArrayList<>( );
-
-        do{
-            try{
-                byte_array.add( ( ( iis != null ) ? iis : stream_from_P2Pcoord ).readByte( ) );
-            } catch ( IOException e ){
-                Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.SEVERE,
-                                                                            "Socket Read Error in ReadMessage()", e );
-                throw e;
-            }
-
-        } while ( ( ( iis != null ) ? iis : stream_from_P2Pcoord ).available( ) > 0 );
-
-        byte[] msg_bytes = new byte[ byte_array.size( ) ];
-
-
-        //unboxing bytes from Bytes
-        int idx = 0;
-        for ( Byte b : byte_array ){
-            msg_bytes[ idx++ ] = b;
-        }
-
-        return msg_bytes;
-
-    }
-
 
     public Message readMessage( ) throws IOException, ClassNotFoundException{
-        return readMessage_( null );
+        return readMessage_( stream_from_P2Pcoord );
     }
 
-    public Message readMessage( ObjectInputStream iis ) throws IOException, ClassNotFoundException{
+    public Message readMessage( InputStream iis ) throws IOException, ClassNotFoundException{
         return readMessage_( iis );
     }
 
 
-    synchronized private Message readMessage_( ObjectInputStream iis ) throws IOException, ClassNotFoundException{
+    private Message readMessage_( InputStream iis ) throws IOException, ClassNotFoundException{
 
-
-        byte[] encrypted_msg_bytes;
         byte[] decrypted_msg_bytes;
 
 
-        encrypted_msg_bytes = consumeAllBytesFromInputStream( iis );
+        byte[] encrypted_msg_bytes = new byte[ 8192 ];
+        int num;
+        num = iis.read( encrypted_msg_bytes, 0, 8192 );
+
 
         //example of what call will look like when I decrypt using AES decryption alg using
         //shared key established in doHandShake
         //decrypted_msg_bytes = Encrypter.AESdecrypt(SHARED_KEY,encrypted_msg_bytes);
 
-        //testing
+
         decrypted_msg_bytes = encrypted_msg_bytes;
-        //testing
 
-        Message new_msg;
+        Message returnMsg;
 
-        try ( ByteArrayInputStream byte_stream = new ByteArrayInputStream( decrypted_msg_bytes );
-              ObjectInputStream from_byte_stream = new ObjectInputStream( byte_stream ) ){
+        ByteArrayInputStream byte_stream_out = new ByteArrayInputStream( decrypted_msg_bytes );
+        ObjectInputStream from_byte_stream = new ObjectInputStream( byte_stream_out );
 
-            new_msg = (Message) from_byte_stream.readObject( );
-
-        } catch ( ClassNotFoundException e ){
-            Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.SEVERE,
-                                                                        "Deserializing Error in ReadMessage()", e );
-            throw e;
-        }
+        return (Message) from_byte_stream.readObject( );
 
 
-        return new_msg;
     }
 
-//    public void updateStatus( Status status ) throws IOException{
-//        writeMessage( new Message( MessageType.STATUS,
-//                                   userSelf, null ).setStatus( status ) );
-//
-//    }
+
 
     public void closeConnection( ) throws IOException{
 
@@ -417,7 +367,7 @@ public class SecureConnection
 
 
             P2Plistener_thread = new Thread( new P2Plistener( ) );
-            P2Plistener_thread.setDaemon(true);
+            P2Plistener_thread.setDaemon( true );
             P2Plistener_thread.start( );
 
         }
@@ -480,7 +430,7 @@ public class SecureConnection
                         if ( online_users.get( ID ) != finalMsg.getUser( ) ){
 
                             try{
-                                writeMessage( finalMsg, new ObjectOutputStream( socketConn.getOutputStream( ) ) );
+                                writeMessage( finalMsg, socketConn.getOutputStream( ) );
                             } catch ( IOException e ){
                                 Logger.getLogger( this.getClass( ).toString( ) ).log( Level.SEVERE,
                                                                                       "A broadcast message failed to send",
@@ -516,7 +466,7 @@ public class SecureConnection
 
                 try{
                     listening_sock = new ServerSocket( portNum, BACKLOG );
-                    listening_sock.setReuseAddress(true);
+                    listening_sock.setReuseAddress( true );
                 } catch ( IOException e ){
                     Logger.getLogger( P2Plistener.class.toString( ) ).log( Level.SEVERE,
                                                                            "Server Socket failed in P2Plistner" );
@@ -533,10 +483,9 @@ public class SecureConnection
                     try{
 
                         t = new Thread( new P2Phandler( listening_sock.accept( ) ) );
-                        t.setDaemon(true);
-                        System.out.println("about to sleep");
-                        Thread.sleep(500);
-                        System.out.println("waking up now");
+                        t.setDaemon( true );
+
+
                         threadList.add( t );
                         t.start( );
 
@@ -545,8 +494,6 @@ public class SecureConnection
                         Logger.getLogger( P2Plistener.class.toString( ) ).log( Level.SEVERE,
                                                                                "Server userSocket accept failed in P2Plistner" );
 
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
                     }
 
 
@@ -563,7 +510,7 @@ public class SecureConnection
             boolean continueHandling = true;
 
             P2Phandler( Socket connected_sock ){
-                System.out.println("inside handler ctor");
+                System.out.println( "inside handler ctor" );
                 this.connected_sock = connected_sock;
                 host_connections.put( Thread.currentThread( ).getId( ), connected_sock );
 
@@ -575,9 +522,8 @@ public class SecureConnection
             public void run( ){
 
 
-                try ( ObjectOutputStream oos = new ObjectOutputStream( connected_sock.getOutputStream( ) );
-                ObjectInputStream iis = new ObjectInputStream( connected_sock.getInputStream( ) );
-                      ){
+                try ( OutputStream oos = connected_sock.getOutputStream( );
+                      InputStream iis = connected_sock.getInputStream( ) ){
 
                     Message msg;
                     while ( connected_sock.isConnected( ) && continueHandling ){
@@ -590,7 +536,17 @@ public class SecureConnection
                             //containing users public key, then encrypt the shared
                             //secret AES128 bit key via RSAencrypt then send back to userSelf;
                             //now all further communication will be encrypted via AES
-                            msg = (Message) iis.readObject( );
+
+                            byte[] in_buff = new byte[ 8192 ];
+                            iis.read( in_buff, 0, 8192 );
+
+                            ByteArrayInputStream byte_stream_out = new ByteArrayInputStream( in_buff );
+                            ObjectInputStream from_byte_stream = new ObjectInputStream( byte_stream_out );
+
+                            msg = (Message) from_byte_stream.readObject( );
+
+                            System.out.println( "TESTING IN HANDLER HANDSHAKE AREA: " + msg );
+
 
                             assert msg.getType( ) == MessageType.HANDSHAKE ||
                                    msg.getType( ) == MessageType.SELFCONNECTION :
@@ -609,7 +565,6 @@ public class SecureConnection
                             }
 
 
-
                             byte[] usersPubkey = msg.getContent( ).getBytes( );
 
                             byte[] encryptedSharedSecret;
@@ -622,9 +577,17 @@ public class SecureConnection
                             encryptedSharedSecret = "ENCRYPTED SHARED SECRET".getBytes( );
 
 
-                            oos.writeObject( new Message( MessageType.HANDSHAKE,
-                                                          ControllerUser,
-                                                          byteToString( encryptedSharedSecret ) ) );
+                            ByteArrayOutputStream byte_stream_in = new ByteArrayOutputStream( );
+                            ObjectOutputStream to_byte_stream = new ObjectOutputStream( byte_stream_in );
+
+                            byte[] msg_bytes;
+                            to_byte_stream.writeObject( new Message( MessageType.HANDSHAKE,
+                                                                     ControllerUser,
+                                                                     byteToString( encryptedSharedSecret ) ) );
+                            msg_bytes = byte_stream_in.toByteArray( );
+
+                            oos.write( msg_bytes, 0, msg_bytes.length );
+
 
 
                             outgoingMessages.put( msg.setType( MessageType.ADDUSER )
