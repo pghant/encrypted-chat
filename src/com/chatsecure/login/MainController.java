@@ -3,9 +3,6 @@ package com.chatsecure.login;
 
 import java.io.IOException;
 
-import com.chatsecure.client.ChatController;
-import com.chatsecure.client.MessageReceiver;
-
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -17,6 +14,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
+
+import com.chatsecure.client.MessageReceiver;
 
 /**
  * @author sriramvaradharajan
