@@ -126,12 +126,10 @@ public class SecureConnection
             stream_to_P2Pcoord = userSocket.getOutputStream( );
             stream_from_P2Pcoord = userSocket.getInputStream( );
 
-            RSAEncryption RSAenc = new RSAEncryption( );
+
 
             Message m = new Message( MessageType.SELFCONNECTION,
-                                     userSelf, null )
-                    .setPublicKey_exponent( RSAenc.getPublicKey( ).get( "exp" ) )
-                    .setPublicKey_moduls( RSAenc.getPublicKey( ).get( "mod" ) );
+                                     userSelf, null );
 
             to_byte_stream.writeObject( m );
             msg_bytes = byte_stream_in.toByteArray( );
@@ -140,13 +138,6 @@ public class SecureConnection
 
             stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
 
-//            try{
-//                doHandShake( );
-//            } catch ( IOException | ClassNotFoundException e ){
-//                Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.SEVERE,
-//                                                                            "Error Initialize:  doHandShake()", e );
-//                throw e;
-//            }
 
 
         } else{
@@ -259,11 +250,11 @@ public class SecureConnection
             shared_secret = RSAenc.decrypt( returnMsg.getRSAresult( ) );
 
             System.out.println( "RSA COMPUTER SHARED KEY: " + Arrays.toString( shared_secret ) );
+            
 
-            System.out.println( "TRUE SHARED SECRET: " + Arrays.toString( SHARED_KEY ) );
-            //testing
-            //shared_secret = returnMsg.getContent( ).getBytes( );
-            //testing
+//            testing
+//            shared_secret = returnMsg.getContent( ).getBytes( );
+//            testing
 
 
         } catch ( IOException | ClassNotFoundException e ){
@@ -277,7 +268,7 @@ public class SecureConnection
         }
 
 
-        //SHARED_KEY = shared_secret;
+        SHARED_KEY = shared_secret;
 
     }
 
@@ -473,7 +464,9 @@ public class SecureConnection
                                                                                   "A broadcast message failed to send",
                                                                                   e );
 
-                            //maybe kill the entire program here
+                            //don't kill entire program here because if socket write
+                            //fails it may just be that users socket closed unexpectedly
+                            //so just ignore fail and broadcast to everyone else
 
                         }
                         if ( finalMsg.getType( ) == MessageType.REMOVEUSER ){
@@ -647,7 +640,15 @@ public class SecureConnection
 
                             //decrypts message to take appropriate actions depending on
                             //message type then broadcasts message to all other users
+
                             msg = readMessage( iis );
+
+
+                            if ( msg == null ){
+                                Logger.getLogger( this.getClass( ).toString( ) ).log( Level.WARNING,
+                                                                                      "P2Phandler--readMessage returned null" );
+                                continue;
+                            }
 
                             switch ( msg.getType( ) ){
 
