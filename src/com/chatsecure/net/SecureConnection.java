@@ -1,5 +1,6 @@
 package com.chatsecure.net;
 
+import com.chatsecure.aes.CTR;
 import com.chatsecure.client.Message;
 import com.chatsecure.client.MessageType;
 import com.chatsecure.client.Status;
@@ -125,12 +126,10 @@ public class SecureConnection
             stream_to_P2Pcoord = userSocket.getOutputStream( );
             stream_from_P2Pcoord = userSocket.getInputStream( );
 
-            RSAEncryption RSAenc = new RSAEncryption( );
+
 
             Message m = new Message( MessageType.SELFCONNECTION,
-                                     userSelf, null )
-                    .setPublicKey_exponent( RSAenc.getPublicKey( ).get( "exp" ) )
-                    .setPublicKey_moduls( RSAenc.getPublicKey( ).get( "mod" ) );
+                                     userSelf, null );
 
             to_byte_stream.writeObject( m );
             msg_bytes = byte_stream_in.toByteArray( );
@@ -139,13 +138,6 @@ public class SecureConnection
 
             stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
 
-//            try{
-//                doHandShake( );
-//            } catch ( IOException | ClassNotFoundException e ){
-//                Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.SEVERE,
-//                                                                            "Error Initialize:  doHandShake()", e );
-//                throw e;
-//            }
 
 
         } else{
@@ -260,9 +252,11 @@ public class SecureConnection
             System.out.println( "RSA COMPUTER SHARED KEY: " + Arrays.toString( shared_secret ) );
 
             System.out.println( "TRUE SHARED SECRET: " + Arrays.toString( SHARED_KEY ) );
-            //testing
-            //shared_secret = returnMsg.getContent( ).getBytes( );
-            //testing
+
+            
+//            testing
+//            shared_secret = returnMsg.getContent( ).getBytes( );
+//            testing
 
 
         } catch ( IOException | ClassNotFoundException e ){
@@ -276,7 +270,7 @@ public class SecureConnection
         }
 
 
-        //SHARED_KEY = shared_secret;
+        SHARED_KEY = shared_secret;
 
     }
 
@@ -303,16 +297,15 @@ public class SecureConnection
             msg_bytes = byte_stream.toByteArray( );
 
 
-//            try{
-//                CTR.setkey( SHARED_KEY );
-//                encrypted_msg_bytes = CTR.encryptMessage( msg_bytes );
-//            } catch ( Exception e ){
-//                // TODO Auto-generated catch block
-//                e.printStackTrace( );
-//            }
+            try{
+                CTR.setkey( SHARED_KEY );
+                encrypted_msg_bytes = CTR.encryptMessage( msg_bytes );
+            } catch ( Exception e ){
+                // TODO Auto-generated catch block
+                e.printStackTrace( );
+            }
 
-            //TEST CALL UNTIL AES FIXED
-            encrypted_msg_bytes = msg_bytes;
+
 
 
 
@@ -341,22 +334,24 @@ public class SecureConnection
         byte[] decrypted_msg_bytes = null;
 
 
-        byte[] encrypted_msg_bytes = new byte[ 8192 ];
-        int num;
-        num = iis.read( encrypted_msg_bytes, 0, 8192 );
+        byte[] received_msg_bytes = new byte[ 8192 ];
+        int num = iis.read( received_msg_bytes, 0, 8192 );
+        if ( num == -1 ){
+            return null;
+        }
+        byte[] encrypted_msg_bytes = new byte[ num ];
+        System.arraycopy( received_msg_bytes, 0, encrypted_msg_bytes, 0, num );
+
+        try{
+            CTR.setkey( SHARED_KEY );
+            decrypted_msg_bytes = CTR.decryptMessage( encrypted_msg_bytes );
+        } catch ( Exception e1 ){
+            // TODO Auto-generated catch block
+            e1.printStackTrace( );
+        }
 
 
-//        try{
-//            CTR.setkey( SHARED_KEY );
-//            decrypted_msg_bytes = CTR.decryptMessage( encrypted_msg_bytes );
-//        } catch ( Exception e1 ){
-//            // TODO Auto-generated catch block
-//            e1.printStackTrace( );
-//        }
 
-
-        //TESTING UNTIL AES FIXED
-        decrypted_msg_bytes = encrypted_msg_bytes;
 
         assert decrypted_msg_bytes != null : "CTR.decrypt returned null";
 
@@ -483,7 +478,9 @@ public class SecureConnection
                                                                                   "A broadcast message failed to send",
                                                                                   e );
 
-                            //maybe kill the entire program here
+                            //don't kill entire program here because if socket write
+                            //fails it may just be that users socket closed unexpectedly
+                            //so just ignore fail and broadcast to everyone else
 
                         }
                         if ( finalMsg.getType( ) == MessageType.REMOVEUSER ){
