@@ -7,23 +7,82 @@ import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
-
-public class GUI extends Application {
-
+import java.io.IOException;
 
 
+public class GUI extends Application
+{
 
+    private static Stage theStage;
+
+    private Thread t;
+
+    public static Stage getPrimaryStage( ){
+        return theStage;
+    }
 
 
     @Override
-    public void start(Stage primaryStage) throws Exception{
-        Parent root = FXMLLoader.load(getClass().getResource( "resources/views/chat_window.fxml" ));
+    public void start( Stage primaryStage ) throws Exception{
 
-        BorderPane actualRoot = (BorderPane)root;
+        FXMLLoader loader = new FXMLLoader( getClass( ).getResource( "resources/views/chat_window.fxml" ) );
+
+        Parent root = loader.load( );
+
+        ChatController controller = loader.getController( );
+
+        BorderPane actualRoot = (BorderPane) root;
 
 
+        //to access stage from other classes; set new to chat display after login screen
+        theStage = primaryStage;
 
-        Scene scene = new Scene( root);
+
+//
+//        StackPane root = new StackPane( );
+//        Rectangle rect = new Rectangle( );
+//        Font f = Font.font( "KacstLetter", 18 );
+//        Text text = new Text( "Hello JPC, how are you today? are you coming tomorrow" );
+//        text.setFont( f );
+//        text.setWrappingWidth( 200 );
+//        root.getChildren( ).addAll( rect, text );
+//        root.setAlignment( Pos.CENTER );
+//        rect.setFill( Color.web( "#53d68e" ) );
+//
+//        Light.Distant light = new Light.Distant( );
+//
+//
+//        light.setColor( Color.web( "#c6d7d6" ) );
+//
+//
+//        Lighting lighting = new Lighting( );
+//
+//        lighting.setDiffuseConstant( 0.9 );
+//
+//        lighting.setLight( light );
+//        lighting.setBumpInput( new Shadow( ) );
+//        lighting.setSurfaceScale( 4.5 );
+//        lighting.setSpecularConstant( 0.6 );
+//        lighting.setSpecularExponent( 29.0 );
+//        light.setAzimuth( 225.0 );
+//        light.setElevation( 49.0 );
+//        rect.setEffect( lighting );
+//        rect.setHeight( text.getBoundsInLocal( ).getHeight( )+10 );
+//        rect.setWidth( text.getBoundsInLocal( ).getWidth( ) +20);
+//
+//        rect.setArcHeight( 20 );
+//        rect.setArcWidth( 30 );
+//
+//        text.setFill( Paint.valueOf( "white" ) );
+
+
+        // primaryStage.initStyle( StageStyle.TRANSPARENT);
+
+
+        //primaryStage.setFullScreen( true );
+
+
+        Scene scene = new Scene( root );
 
 
         //TESTING out some random stuff
@@ -86,14 +145,81 @@ public class GUI extends Application {
 //        System.out.println( "Size: " + observableList.size( ) );
 
 
+        //
 
-        primaryStage.setTitle("SecureChat");
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        // ServerSocket serv = new ServerSocket( 5463 );
+//        final Socket[] remoteSock = new Socket[ 1 ];
+//
+//        Thread t = new Thread( ( ) -> {
+//            try{
+//                remoteSock[ 0 ] = serv.accept( );
+//            } catch ( IOException e ){
+//                e.printStackTrace( );
+//            }
+//        } );
+//         t.start();
+
+//
+//        Socket localSock = new Socket( "192.168.1.2", 5463 );
+//        Socket remoteSock = serv.accept();
+//        OutputStream localOutStream = localSock.getOutputStream();
+//        InputStream localInStream = localSock.getInputStream();
+//
+//        OutputStream remoteOutStream = remoteSock.getOutputStream( );
+//        InputStream remoteInStream = remoteSock.getInputStream( );
+//
+//        Message msg = new Message( MessageType.USER, new User( "JPC", Status.ONLINE ), "attack at dawn" );
+//        ByteArrayOutputStream byte_stream_in = new ByteArrayOutputStream( );
+//        ObjectOutputStream to_byte_stream = new ObjectOutputStream( byte_stream_in );
+//
+//        byte[] msg_bytes;
+//        to_byte_stream.writeObject( msg );
+//        msg_bytes = byte_stream_in.toByteArray( );
+//
+//        localOutStream.write( msg_bytes,0,msg_bytes.length );
+//
+//
+//        byte[] in_buff = new byte[ 8192 ];
+//        remoteInStream.read( in_buff, 0, 8192 );
+//
+//        Message new_msg;
+//
+//         ByteArrayInputStream byte_stream_out = new ByteArrayInputStream( in_buff );
+//              ObjectInputStream from_byte_stream = new ObjectInputStream( byte_stream_out );
+//
+//            new_msg = (Message) from_byte_stream.readObject( );
+//
+//        System.out.println("TESTING OUTPUT: "+new_msg );
+//
+
+
+        primaryStage.setTitle( "SecureChat" );
+        primaryStage.setScene( scene );
+        primaryStage.show( );
+
+
+        MessageReceiver rcvr;
+
+        t = new Thread( ( rcvr = new MessageReceiver( 5323, controller, "JPC" ) ) );
+
+        t.setName( "MSG-RCVR" );
+        t.start();
+
+        Thread t2 = new Thread( ( ) -> {
+            try{
+                controller.sendToP2Pcoordinator( new Message( MessageType.USER, MessageReceiver.getUserSelf( )
+                        , "hello old boy" ) );
+            } catch ( IOException e ){
+                e.printStackTrace( );
+            }
+        } );
+
+        t2.setName( "TEST-SENDER" );
+        t2.start( );
     }
 
 
-    public static void main(String[] args) {
-        launch(args);
+    public static void main( String[] args ){
+        launch( args );
     }
 }

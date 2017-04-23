@@ -16,9 +16,15 @@ public class User implements Serializable{
         this.status = status;
     }
 
-    public User setStatus( final Status status ){
+    public User updateStatus( final Status status ){
         this.status = status;
         return this;
+    }
+
+    //
+    @Override
+    public String toString( ){
+        return String.format( "User{ name: %1$s  status: %2$s}", name, status );
     }
 
     public String getName( ){
