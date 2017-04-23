@@ -3,6 +3,7 @@ package com.chatsecure.net;
 import com.chatsecure.aes.CTR;
 import com.chatsecure.client.Message;
 import com.chatsecure.client.MessageType;
+import com.chatsecure.client.Status;
 import com.chatsecure.client.User;
 import com.chatsecure.rsa.RSAEncryption;
 
@@ -646,8 +647,9 @@ public class SecureConnection
                             ObjectOutputStream to_byte_stream = new ObjectOutputStream( byte_stream_in );
 
                             byte[] msg_bytes;
-                            Message m = new Message( MessageType.HANDSHAKE, controllerUser
-                                    , null ).setRSAresult( encryptedSharedSecret );
+                            Message m = new Message( MessageType.HANDSHAKE,
+                                                     new User( "P2Pcontroller", Status.CONTROLLER ),
+                                                     null ).setRSAresult( encryptedSharedSecret );
 
 
                             System.out.println( "Handshake response: " + m );
