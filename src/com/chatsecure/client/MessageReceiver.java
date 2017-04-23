@@ -94,6 +94,12 @@ public class MessageReceiver implements Runnable
 
                 incoming_msg = secureCon.readMessage( );
 
+                if ( incoming_msg == null ){
+                    Logger.getLogger( MessageReceiver.class.toString( ) ).log( Level.WARNING,
+                                                                               "MessageRcvr--readMessage returned null" );
+                    continue;
+                }
+
 
             } catch ( IOException e ){
                 Logger.getLogger( MessageReceiver.class.toString( ) ).log( Level.SEVERE,
