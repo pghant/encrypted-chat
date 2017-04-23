@@ -50,7 +50,7 @@ public class SecureConnection
     //else this key is set in call doHandShake
 
     //HARDCODED FOR TESTING
-    private static byte[] SHARED_KEY = new byte[]{ 51, 22, 30, 94, 55, 22, 77, 4, 2, 3, 6, 32, 2, 34, 6, 18 };
+    private static byte[] SHARED_KEY = new byte[ 16 ];
 
 
     public static SecureConnection getConnection( ){
@@ -259,9 +259,6 @@ public class SecureConnection
             System.out.println( "RSA COMPUTER SHARED KEY: " + Arrays.toString( shared_secret ) );
 
 
-//            testing
-//            shared_secret = returnMsg.getContent( ).getBytes( );
-//            testing
 
 
         } catch ( IOException | ClassNotFoundException e ){
@@ -273,7 +270,7 @@ public class SecureConnection
             throw e;
         }
 
-        //SHARED_KEY = shared_secret;
+        SHARED_KEY = shared_secret;
 
     }
 

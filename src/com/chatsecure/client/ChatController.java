@@ -244,7 +244,8 @@ public class ChatController
         } catch ( IOException e ){
 
         } finally{
-            //Platform.exit( );
+
+            Platform.exit( );
         }
     }
 
@@ -270,34 +271,6 @@ public class ChatController
 
     private void updateSelfStatusInChat( Status status ){
 
-
-//        Status status = Status.ONLINE;
-//        switch ( item.getId( ) ){
-//            case "status_online_btn":
-//
-//                if ( item.isSelected( ) ){
-//                    if ( MessageReceiver.getUserSelf( ).getStatus( ) != Status.ONLINE ){
-//                        status_away_btn.selectedProperty( ).setValue( false );
-//                        status = Status.ONLINE;
-//                    } else{
-//                        return;
-//                    }
-//
-//                }
-//                break;
-//
-//            case "status_away_btn":
-//                if ( item.isSelected( ) ){
-//                    if ( MessageReceiver.getUserSelf( ).getStatus( ) != Status.ONLINE ){
-//                        status_online_btn.selectedProperty( ).setValue( false );
-//                        status = Status.AWAY;
-//                    } else{
-//                        return;
-//                    }
-//
-//                }
-//                break;
-//        }
 
         try{
 
