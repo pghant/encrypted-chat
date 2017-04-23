@@ -18,70 +18,76 @@ import java.io.IOException;
 
 /**
  * @author sriramvaradharajan
- *
  */
- 
-public class MainController {
 
-@FXML
-private Label lblStatus;
+public class MainController
+{
 
-@FXML
-private  TextField txtUserName;
+    @FXML
+    private Label lblStatus;
 
-@FXML
-private TextField txtPassword;
+    @FXML
+    private TextField txtUserName;
 
-@FXML
-private CheckBox cboxp2pcoordinator;
+    @FXML
+    private TextField txtPassword;
 
-@FXML
-private TextField hostAddress;
+    @FXML
+    private CheckBox cboxp2pcoordinator;
 
-@FXML
-private Button btnSignIn;
+    @FXML
+    private TextField hostAddress;
+
+    @FXML
+    private Button btnSignIn;
     private MessageReceiver rcvr;
     private Thread rcvr_thread;
-public void signin(ActionEvent event){
-	if(txtUserName.getText().equals("user") && txtPassword.getText().equals("password")){
-		lblStatus.setText("Login success");
-		try {
-			FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/chatsecure/client/resources/views/chat_window.fxml"));
-			Parent root = loader.load();
-			Scene scene = new Scene(root);
-			Stage stage = (Stage) btnSignIn.getScene().getWindow();
-		    stage.setScene(scene);
-		    
-		    try {
-		    	if(cboxp2pcoordinator.isSelected()){
-                    rcvr_thread = new Thread( rcvr = new MessageReceiver( 5320, loader.getController( ), "user" ) );
-                    rcvr_thread.start( );
-                }else{
-                    rcvr_thread = new Thread(
-                            rcvr = new MessageReceiver( hostAddress.getText( ), 5320, loader.getController( ),
-                                                        "user" ) );
-                    rcvr_thread.start( );
 
-		    	}
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			}
-		    stage.show(); 
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		
-	}else{
-		lblStatus.setText("Login Failed");
-	}
-}
-public void checkp2p(MouseEvent event){
-    	if(cboxp2pcoordinator.isSelected()){
-    		hostAddress.setVisible(false);
-    	}else{
-    		hostAddress.setVisible(true);
-    	}
+    public void signin( ActionEvent event ){
+        if ( txtUserName.getText( ).equals( "user" ) && txtPassword.getText( ).equals( "password" ) ){
+            lblStatus.setText( "Login success" );
+            try{
+                FXMLLoader loader = new FXMLLoader(
+                        getClass( ).getResource( "/com/chatsecure/client/resources/views/chat_window.fxml" ) );
+                Parent root = loader.load( );
+                Scene scene = new Scene( root );
+                Stage stage = (Stage) btnSignIn.getScene( ).getWindow( );
+                stage.setScene( scene );
 
-	
-}
+                try{
+                    if ( cboxp2pcoordinator.isSelected( ) ){
+                        rcvr_thread = new Thread(
+                                rcvr = new MessageReceiver( 5320, loader.getController( ), "JPC" ) );
+                        rcvr_thread.setName( "MSG_RCVR_4_P2P" );
+                        rcvr_thread.start( );
+                    } else{
+                        rcvr_thread = new Thread(
+                                rcvr = new MessageReceiver( hostAddress.getText( ), 5320, loader.getController( ),
+                                                            "TBRADY" ) );
+                        rcvr_thread.setName( "MSG_RCVR_4_USER" );
+                        rcvr_thread.start( );
+
+                    }
+                } catch ( ClassNotFoundException e ){
+                    e.printStackTrace( );
+                }
+                stage.show( );
+            } catch ( IOException e ){
+                e.printStackTrace( );
+            }
+
+        } else{
+            lblStatus.setText( "Login Failed" );
+        }
+    }
+
+    public void checkp2p( MouseEvent event ){
+        if ( cboxp2pcoordinator.isSelected( ) ){
+            hostAddress.setVisible( false );
+        } else{
+            hostAddress.setVisible( true );
+        }
+
+
+    }
 }
