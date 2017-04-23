@@ -217,10 +217,10 @@ public class ChatController
                 removeUserFromChat( msg.getUser( ) );
                 break;
             case ADDUSER:
-                addNewUserToChat( msg.getUser( ) );
+                addNewUserToChat( msg );
                 break;
             case STATUS:
-                updateOnlineUsersStatusInChat( msg.getUser( ) );
+                updateOnlineUsersStatusInChat( msg );
                 break;
         }
 
@@ -244,15 +244,17 @@ public class ChatController
         } catch ( IOException e ){
 
         } finally{
-            //Platform.exit( );
+
+            Platform.exit( );
         }
     }
 
     public void addSelfUserToChat( User user ){
-        Platform.runLater( ( ) -> addNewUserToChat( user ) );
-    }
-    private void addNewUserToChat( User user ){
         Platform.runLater( ( ) -> onlineUsers.add( user ) );
+    }
+
+    private void addNewUserToChat( Message msg ){
+        Platform.runLater( ( ) -> syncrhonizeOnlineUsersList( msg.getUserList( ) ) );
     }
 
     private void removeUserFromChat( User user ){
@@ -270,34 +272,6 @@ public class ChatController
 
     private void updateSelfStatusInChat( Status status ){
 
-
-//        Status status = Status.ONLINE;
-//        switch ( item.getId( ) ){
-//            case "status_online_btn":
-//
-//                if ( item.isSelected( ) ){
-//                    if ( MessageReceiver.getUserSelf( ).getStatus( ) != Status.ONLINE ){
-//                        status_away_btn.selectedProperty( ).setValue( false );
-//                        status = Status.ONLINE;
-//                    } else{
-//                        return;
-//                    }
-//
-//                }
-//                break;
-//
-//            case "status_away_btn":
-//                if ( item.isSelected( ) ){
-//                    if ( MessageReceiver.getUserSelf( ).getStatus( ) != Status.ONLINE ){
-//                        status_online_btn.selectedProperty( ).setValue( false );
-//                        status = Status.AWAY;
-//                    } else{
-//                        return;
-//                    }
-//
-//                }
-//                break;
-//        }
 
         try{
 
@@ -335,14 +309,16 @@ public class ChatController
 
     }
 
-    private void updateOnlineUsersStatusInChat( User user ){
+    private void updateOnlineUsersStatusInChat( Message msg ){
         Platform.runLater( ( ) -> {
 
-            onlineUsers.forEach( user1 -> {
-                if ( user1.getName( ).equals( user.getName( ) ) ){
-                    user1.updateStatus( user.getStatus( ) );
-                }
-            } );
+
+            syncrhonizeOnlineUsersList( msg.getUserList( ) );
+//            onlineUsers.forEach( user1 -> {
+//                if ( user1.getName( ).equals( user.getName( ) ) ){
+//                    user1.updateStatus( user.getStatus( ) );
+//                }
+//            } );
 
         } );
 

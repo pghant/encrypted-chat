@@ -3,6 +3,7 @@ package com.chatsecure.rsa.test;
 import com.chatsecure.rsa.RSAEncryption;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 
 public class RSAEncryptionTest {
 	public static void main(String args[]){
