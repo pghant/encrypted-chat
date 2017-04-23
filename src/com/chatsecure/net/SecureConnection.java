@@ -253,7 +253,7 @@ public class SecureConnection
 
             System.out.println( "TRUE SHARED SECRET: " + Arrays.toString( SHARED_KEY ) );
 
-            
+
 //            testing
 //            shared_secret = returnMsg.getContent( ).getBytes( );
 //            testing
