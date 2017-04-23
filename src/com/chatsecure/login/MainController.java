@@ -69,13 +69,13 @@ public class MainController
                 try{
                     if ( cboxp2pcoordinator.isSelected( ) ){
                         rcvr_thread = new Thread(
-                                rcvr = new MessageReceiver( 5320, loader.getController( ), "JPC" ) );
+                                rcvr = new MessageReceiver( 5320, loader.getController( ),txtUserName.getText( ) ) );
                         rcvr_thread.setName( "MSG_RCVR_4_P2P" );
                         rcvr_thread.start( );
                     } else{
                         rcvr_thread = new Thread(
                                 rcvr = new MessageReceiver( hostAddress.getText( ), 5320, loader.getController( ),
-                                                            "TBRADY" ) );
+                                		txtUserName.getText( ) ) );
                         rcvr_thread.setName( "MSG_RCVR_4_USER" );
                         rcvr_thread.start( );
 
