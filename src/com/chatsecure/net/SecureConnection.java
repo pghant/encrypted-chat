@@ -250,9 +250,7 @@ public class SecureConnection
             shared_secret = RSAenc.decrypt( returnMsg.getRSAresult( ) );
 
             System.out.println( "RSA COMPUTER SHARED KEY: " + Arrays.toString( shared_secret ) );
-
-            System.out.println( "TRUE SHARED SECRET: " + Arrays.toString( SHARED_KEY ) );
-
+            
 
 //            testing
 //            shared_secret = returnMsg.getContent( ).getBytes( );
