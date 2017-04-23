@@ -63,10 +63,10 @@ public class RSAEncryption {
 	/*
 	 * 
 	 */
-	public static BigInteger encrypt( BigInteger mod, BigInteger exp, BigInteger plaintext )
+	public static BigInteger encrypt( RSAPublicKey publicKey, BigInteger plaintext )
 	{
 
-		return ( ( plaintext ) ).modPow( exp, mod );
+		return ( ( plaintext ) ).modPow( publicKey.getExp(), publicKey.getMod() );
 	}
 
 	public byte[] decrypt( BigInteger ciphertext )
@@ -75,15 +75,12 @@ public class RSAEncryption {
 	}
 
 
-	private BigInteger getPrivateKey( ){
+	public BigInteger getPrivateKey( ){
 		return d;
 	}
 
-	public HashMap<String, BigInteger> getPublicKey( ){
-		HashMap<String, BigInteger> pubKey = new HashMap<>( );
-		pubKey.put( "mod", n );
-		pubKey.put( "exp", e );
-		return pubKey;
+	public RSAPublicKey getPublicKey( ){
+		return new RSAPublicKey(n, e);
 	}
-	
+
 }

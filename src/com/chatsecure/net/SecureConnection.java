@@ -128,15 +128,17 @@ public class SecureConnection
 
 
 
-            Message m = new Message( MessageType.SELFCONNECTION,
-                                     userSelf, null );
+//            Message m = new Message( MessageType.SELFCONNECTION,
+//                                     userSelf, null );
+//
+//            to_byte_stream.writeObject( m );
+//            msg_bytes = byte_stream_in.toByteArray( );
+//
+//            System.out.println( "INIT MSG BYTES LENGTH: " + msg_bytes.length );
+//
+//            stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
 
-            to_byte_stream.writeObject( m );
-            msg_bytes = byte_stream_in.toByteArray( );
-
-            System.out.println( "INIT MSG BYTES LENGTH: " + msg_bytes.length );
-
-            stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
+            doHandShake();
 
 
 
@@ -207,14 +209,14 @@ public class SecureConnection
             ObjectOutputStream to_byte_stream = new ObjectOutputStream( byte_stream_in );
 
             byte[] msg_bytes;
-            to_byte_stream.writeObject( new Message( MessageType.HANDSHAKE,
-                                                     userSelf,
-                                                     null )
-                                                .setPublicKey_exponent(
-                                                        RSAenc.getPublicKey( ).get( "exp" ) )
-                                                .setPublicKey_moduls(
-                                                        RSAenc.getPublicKey( ).get( "mod" ) ) );
+            Message m = new Message( MessageType.HANDSHAKE,
+                    userSelf,
+                    null )
+                    .setPublicKey(RSAenc.getPublicKey());
+            to_byte_stream.writeObject( m );
             msg_bytes = byte_stream_in.toByteArray( );
+            System.out.println("Handshake message: " + m.toString());
+            System.out.println("Handshake message length to send: " + msg_bytes.length);
 
             stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
 
@@ -600,10 +602,10 @@ public class SecureConnection
                             //if the userSelf connecting to P2P coordinator is the
                             //userSelf assuming role of p2P coordinator then no need
                             //for remaining handshake operations to continue
-                            if ( msg.getType( ) == MessageType.SELFCONNECTION ){
-                                handshakeDone = true;
-                                continue;
-                            }
+//                            if ( msg.getType( ) == MessageType.SELFCONNECTION ){
+//                                handshakeDone = true;
+//                                continue;
+//                            }
 
 
                             // byte[] usersPubkey = msg.getContent( ).getBytes( );
@@ -611,9 +613,7 @@ public class SecureConnection
                             BigInteger encryptedSharedSecret;
 
 
-                            encryptedSharedSecret = RSAEncryption.encrypt( msg.getPublicKey_moduls( ),
-                                                                           msg.getPublicKey_exponent( ),
-                                                                           new BigInteger( SHARED_KEY ) );
+                            encryptedSharedSecret = RSAEncryption.encrypt( msg.getPublicKey(), new BigInteger( SHARED_KEY ) );
 
 
                             ByteArrayOutputStream byte_stream_in = new ByteArrayOutputStream( );
@@ -645,8 +645,8 @@ public class SecureConnection
 
 
                             if ( msg == null ){
-                                Logger.getLogger( this.getClass( ).toString( ) ).log( Level.WARNING,
-                                                                                      "P2Phandler--readMessage returned null" );
+//                                Logger.getLogger( this.getClass( ).toString( ) ).log( Level.WARNING,
+//                                                                                      "P2Phandler--readMessage returned null" );
                                 continue;
                             }
 

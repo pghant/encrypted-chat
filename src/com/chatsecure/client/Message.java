@@ -1,5 +1,7 @@
 package com.chatsecure.client;
 
+import com.chatsecure.rsa.RSAPublicKey;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -17,9 +19,7 @@ public class Message implements Serializable{
 
 
     private BigInteger RSAresult = null;
-
-    private BigInteger publicKey_moduls = null;
-    private BigInteger publicKey_exponent = null;
+    private RSAPublicKey publicKey;
 
 
 
@@ -39,7 +39,7 @@ public class Message implements Serializable{
                               "pubkey_mod: %5$s \n" +
                               "pubkey_exp: %6$s \n}",
                               user, content, type, getStatus( ),
-                              getPublicKey_moduls( ), getPublicKey_exponent( ) );
+                              publicKey.getMod(), publicKey.getExp() );
     }
 
 
@@ -53,13 +53,8 @@ public class Message implements Serializable{
         return this;
     }
 
-    public Message setPublicKey_moduls( final BigInteger publicKey_moduls ){
-        this.publicKey_moduls = publicKey_moduls;
-        return this;
-    }
-
-    public Message setPublicKey_exponent( final BigInteger publicKey_exponent ){
-        this.publicKey_exponent = publicKey_exponent;
+    public Message setPublicKey(RSAPublicKey key) {
+        this.publicKey = key;
         return this;
     }
 
@@ -72,13 +67,8 @@ public class Message implements Serializable{
         return this;
     }
 
-
-    public BigInteger getPublicKey_moduls( ){
-        return publicKey_moduls;
-    }
-
-    public BigInteger getPublicKey_exponent( ){
-        return publicKey_exponent;
+    public RSAPublicKey getPublicKey() {
+        return publicKey;
     }
 
     public User getUser( ){
