@@ -6,3 +6,6 @@ This project allows users to communicate directly and securely with each other o
 All communication is protected by AES-128 encryption in CTR mode with a randomly generated shared key for each chat session. The initial key exchange is done using RSA public-key cryptography. Every message sent is authenticated with a SHA-512 hash. This ensures the security and integrity of the messages being sent.
 
 The program was developed in Java to ensure maximum compatibility among different platforms. The UI was created using JavaFX. All security algorithms were implemented from scratch.
+
+## How to Run
+In the encrypted_chat directory, run the command `java -jar encrypted_chat.jar`.
