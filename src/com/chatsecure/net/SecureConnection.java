@@ -127,16 +127,25 @@ public class SecureConnection
             stream_from_P2Pcoord = userSocket.getInputStream( );
 
 
+//            Message m = new Message( MessageType.SELFCONNECTION,
+//                                     userSelf, null );
+//
+//            to_byte_stream.writeObject( m );
+//            msg_bytes = byte_stream_in.toByteArray( );
+//
+//            System.out.println( "INIT MSG BYTES LENGTH: " + msg_bytes.length );
 
-            Message m = new Message( MessageType.SELFCONNECTION,
-                                     userSelf, null );
+            //stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
 
-            to_byte_stream.writeObject( m );
-            msg_bytes = byte_stream_in.toByteArray( );
 
-            System.out.println( "INIT MSG BYTES LENGTH: " + msg_bytes.length );
+            try{
+                doHandShake( );
+            } catch ( IOException | ClassNotFoundException e ){
+                Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.SEVERE,
+                                                                            "Error Initialize:  doHandShake()", e );
+                throw e;
+            }
 
-            stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
 
 
 
@@ -218,20 +227,15 @@ public class SecureConnection
 
             stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
 
-            int num;
-            byte[] in_buff = new byte[ 8192 * 4 ];
-//            byte[] in_msg_bytes = new byte[ 8192 ];
-//
-//            int total=0;
-//            while ((num = stream_from_P2Pcoord.read( in_buff, 0, 8192 ))>0){
-//
-//                for ( int i = total; i < (total+in_buff.length); i++ ){
-//                    in_msg_bytes[ i ] = in_buff[ i ];
-//                }
-//                total += num;
-//            }
 
-            num = stream_from_P2Pcoord.read( in_buff, 0, in_buff.length );
+            byte[] received_msg_bytes = new byte[ 8192 ];
+            int num = stream_from_P2Pcoord.read( received_msg_bytes, 0, 8192 );
+            if ( num == -1 ){
+                return;
+            }
+            byte[] in_buff = new byte[ num ];
+            System.arraycopy( received_msg_bytes, 0, in_buff, 0, num );
+
             Message returnMsg;
 
             ByteArrayInputStream byte_stream_out = new ByteArrayInputStream( in_buff );
@@ -249,6 +253,7 @@ public class SecureConnection
 
             shared_secret = RSAenc.decrypt( returnMsg.getRSAresult( ) );
 
+            System.out.println( "TRUE SHARED KEY: " + Arrays.toString( SHARED_KEY ) );
             System.out.println( "RSA COMPUTER SHARED KEY: " + Arrays.toString( shared_secret ) );
 
 
@@ -655,7 +660,7 @@ public class SecureConnection
                             if ( msg == null ){
                                 Logger.getLogger( this.getClass( ).toString( ) ).log( Level.WARNING,
                                                                                       "P2Phandler--readMessage returned null" );
-                                continue;
+                                return;
                             }
 
                             switch ( msg.getType( ) ){
