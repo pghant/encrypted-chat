@@ -34,12 +34,15 @@ public class Message implements Serializable{
 
     @Override
     public String toString( ){
+        String mod = publicKey == null ? null : publicKey.getMod().toString();
+        String exp = publicKey == null ? null : publicKey.getExp().toString();
         return String.format( "Message{ user: %1$s\ncontent: %2$s  type: %3$s" +
                               "  status: %4$s \n" +
                               "pubkey_mod: %5$s \n" +
-                              "pubkey_exp: %6$s \n}",
+                              "pubkey_exp: %6$s \n" +
+                              "RSAResult: %7$s \n}",
                               user, content, type, getStatus( ),
-                              publicKey.getMod(), publicKey.getExp() );
+                              mod, exp, getRSAresult() );
     }
 
 

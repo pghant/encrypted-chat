@@ -240,6 +240,7 @@ public class SecureConnection
             ObjectInputStream from_byte_stream = new ObjectInputStream( byte_stream_out );
 
             returnMsg = (Message) from_byte_stream.readObject( );
+            System.out.println("Return message with shared secret: " + returnMsg);
 
 
             assert returnMsg.getType( ) ==
@@ -602,27 +603,26 @@ public class SecureConnection
                             //if the userSelf connecting to P2P coordinator is the
                             //userSelf assuming role of p2P coordinator then no need
                             //for remaining handshake operations to continue
-//                            if ( msg.getType( ) == MessageType.SELFCONNECTION ){
-//                                handshakeDone = true;
-//                                continue;
-//                            }
+                            if ( msg.getType( ) == MessageType.SELFCONNECTION ){
+                                handshakeDone = true;
+                                continue;
+                            }
 
 
                             // byte[] usersPubkey = msg.getContent( ).getBytes( );
 
                             BigInteger encryptedSharedSecret;
 
-
+                            System.out.println("SHARED_KEY: " + Arrays.toString(SHARED_KEY));
                             encryptedSharedSecret = RSAEncryption.encrypt( msg.getPublicKey(), new BigInteger( SHARED_KEY ) );
-
 
                             ByteArrayOutputStream byte_stream_in = new ByteArrayOutputStream( );
                             ObjectOutputStream to_byte_stream = new ObjectOutputStream( byte_stream_in );
 
                             byte[] msg_bytes;
-                            to_byte_stream.writeObject( new Message( MessageType.HANDSHAKE,
-                                                                     ControllerUser,
-                                                                     ( null ) ).setRSAresult( encryptedSharedSecret ) );
+                            Message m = new Message( MessageType.HANDSHAKE, ControllerUser, null ).setRSAresult( encryptedSharedSecret );
+                            System.out.println("Handshake response: " + m);
+                            to_byte_stream.writeObject( m );
                             msg_bytes = byte_stream_in.toByteArray( );
 
                             System.out.println( "INSIDE p2PHANDLER SIZE OF RSA MSG: " + msg_bytes.length );
@@ -630,8 +630,8 @@ public class SecureConnection
                             oos.write( msg_bytes, 0, msg_bytes.length );
 
 
-                            outgoingMessages.put( msg.setType( MessageType.ADDUSER )
-                                                          .setUserList( new ArrayList<>( online_users.values( ) ) ) );
+//                            outgoingMessages.put( msg.setType( MessageType.ADDUSER )
+//                                                          .setUserList( new ArrayList<>( online_users.values( ) ) ) );
 
 
                             handshakeDone = true;
