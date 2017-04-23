@@ -250,7 +250,7 @@ public class SecureConnection
             shared_secret = RSAenc.decrypt( returnMsg.getRSAresult( ) );
 
             System.out.println( "RSA COMPUTER SHARED KEY: " + Arrays.toString( shared_secret ) );
-            
+
 
 //            testing
 //            shared_secret = returnMsg.getContent( ).getBytes( );
@@ -578,19 +578,15 @@ public class SecureConnection
                             //secret AES128 bit key via RSAencrypt then send back to userSelf;
                             //now all further communication will be encrypted via AES
 
-                            byte[] in_buff = new byte[ 8192 ];
-                            int num;
 
-//                            byte[] in_msg_bytes = new byte[ 8192*10 ];
-//
-//                            int total = 0;
-//                            while ( ( num = iis.read( in_buff, 0, 8192 ) ) > 0 ){
-//
-//                                System.arraycopy( in_buff, 0, in_msg_bytes, 0 + total, in_buff.length );
-//                                total += num;
-//                            }
+                            byte[] received_msg_bytes = new byte[ 8192 ];
+                            int num = iis.read( received_msg_bytes, 0, received_msg_bytes.length );
+                            if ( num == -1 ){
+                                return;
+                            }
+                            byte[] in_buff = new byte[ num ];
+                            System.arraycopy( received_msg_bytes, 0, in_buff, 0, num );
 
-                            num = iis.read( in_buff, 0, in_buff.length );
 
                             ByteArrayInputStream byte_stream_out = new ByteArrayInputStream( in_buff );
                             ObjectInputStream from_byte_stream = new ObjectInputStream( byte_stream_out );
