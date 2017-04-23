@@ -479,7 +479,7 @@ public class ChatController
                     }
                 } else{
 
-                    statusSymbol = new Circle( 5 );
+                    statusSymbol = new Circle( 10 );
                 }
 
 
