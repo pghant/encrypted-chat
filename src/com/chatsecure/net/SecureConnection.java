@@ -654,7 +654,15 @@ public class SecureConnection
 
                             //decrypts message to take appropriate actions depending on
                             //message type then broadcasts message to all other users
+
                             msg = readMessage( iis );
+
+
+                            if ( msg == null ){
+                                Logger.getLogger( this.getClass( ).toString( ) ).log( Level.WARNING,
+                                                                                      "P2Phandler--readMessage returned null" );
+                                continue;
+                            }
 
                             switch ( msg.getType( ) ){
 
