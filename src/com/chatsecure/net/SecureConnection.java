@@ -264,10 +264,11 @@ public class SecureConnection
         } catch ( IOException | ClassNotFoundException e ){
             Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.SEVERE,
                                                                         "Error in doHandShake()", e );
-            throw e;
-        } finally{
             stream_from_P2Pcoord.close( );
             stream_to_P2Pcoord.close( );
+            throw e;
+        } finally{
+
 
         }
 
@@ -642,8 +643,8 @@ public class SecureConnection
 
 
                             if ( msg == null ){
-//                                Logger.getLogger( this.getClass( ).toString( ) ).log( Level.WARNING,
-//                                                                                      "P2Phandler--readMessage returned null" );
+                                Logger.getLogger( this.getClass( ).toString( ) ).log( Level.WARNING,
+                                                                                      "P2Phandler--readMessage returned null" );
                                 continue;
                             }
 
