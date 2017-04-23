@@ -115,6 +115,8 @@ public class SecureConnection
 
             random.nextBytes( SHARED_KEY );
             SHARED_KEY[0] = (byte) Math.abs(SHARED_KEY[0]);
+            if (SHARED_KEY[0] == 0)
+                SHARED_KEY[0] = 1;
 
             Thread.currentThread( ).getId( );
             coordinator = new Thread( new P2Pcoordinator( ) );
