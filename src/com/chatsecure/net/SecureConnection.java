@@ -127,18 +127,17 @@ public class SecureConnection
             stream_from_P2Pcoord = userSocket.getInputStream( );
 
 
+            Message m = new Message( MessageType.SELFCONNECTION,
+                                     userSelf, null );
 
-//            Message m = new Message( MessageType.SELFCONNECTION,
-//                                     userSelf, null );
-//
-//            to_byte_stream.writeObject( m );
-//            msg_bytes = byte_stream_in.toByteArray( );
-//
-//            System.out.println( "INIT MSG BYTES LENGTH: " + msg_bytes.length );
-//
-//            stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
+            to_byte_stream.writeObject( m );
+            msg_bytes = byte_stream_in.toByteArray( );
 
-            doHandShake();
+            System.out.println( "INIT MSG BYTES LENGTH: " + msg_bytes.length );
+
+            stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
+
+            // doHandShake();
 
 
 
