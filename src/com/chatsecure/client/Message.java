@@ -52,7 +52,7 @@ public class Message implements Serializable{
     }
 
     public Message setStatus( final Status status ){
-        this.user.setStatus( status );
+        this.user.updateStatus( status );
         return this;
     }
 

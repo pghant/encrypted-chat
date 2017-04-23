@@ -16,7 +16,7 @@ public class User implements Serializable{
         this.status = status;
     }
 
-    public User setStatus( final Status status ){
+    public User updateStatus( final Status status ){
         this.status = status;
         return this;
     }

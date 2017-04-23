@@ -103,7 +103,8 @@ public class ChatController
             if ( t1 && !aBoolean ){
                 status_online_btn.setSelected( false );
                 myStatusSymbol.setFill( Paint.valueOf( "red" ) );
-                MessageReceiver.getUserSelf( ).setStatus( Status.AWAY );
+                //  MessageReceiver.getUserSelf( ).updateStatus( Status.AWAY );
+                updateSelfStatusInChat( Status.AWAY );
             }
         } );
 
@@ -114,7 +115,8 @@ public class ChatController
 
                 status_away_btn.setSelected( false );
                 myStatusSymbol.setFill( Paint.valueOf( "green" ) );
-                MessageReceiver.getUserSelf( ).setStatus( Status.ONLINE );
+                // MessageReceiver.getUserSelf( ).updateStatus( Status.ONLINE );
+                updateSelfStatusInChat( Status.ONLINE );
             }
 
         } );
@@ -242,7 +244,8 @@ public class ChatController
         } catch ( IOException e ){
 
         } finally{
-            //Platform.exit( );
+
+            Platform.exit( );
         }
     }
 
@@ -266,43 +269,20 @@ public class ChatController
 
     }
 
-    private void updateSelfStatusInChat( CheckMenuItem item ){
+    private void updateSelfStatusInChat( Status status ){
 
-
-        Status status = Status.ONLINE;
-        switch ( item.getId( ) ){
-            case "status_online_btn":
-
-                if ( item.isSelected( ) ){
-                    if ( MessageReceiver.getUserSelf( ).getStatus( ) != Status.ONLINE ){
-                        status_away_btn.selectedProperty( ).setValue( false );
-                        status = Status.ONLINE;
-                    } else{
-                        return;
-                    }
-
-                }
-                break;
-
-            case "status_away_btn":
-                if ( item.isSelected( ) ){
-                    if ( MessageReceiver.getUserSelf( ).getStatus( ) != Status.ONLINE ){
-                        status_online_btn.selectedProperty( ).setValue( false );
-                        status = Status.AWAY;
-                    } else{
-                        return;
-                    }
-
-                }
-                break;
-        }
 
         try{
 
-            onlineUsers.set( onlineUsers.indexOf( MessageReceiver.getUserSelf( ) ),
-                             MessageReceiver.getUserSelf( ).setStatus( status ) );
+            onlineUsers.forEach( user -> {
+                if ( user.getName( ).equals( MessageReceiver.getUserSelf( ).updateStatus( status ).getName( ) ) ){
+                    user.updateStatus( status );
 
-            System.out.println( "inside update status: " + MessageReceiver.getUserSelf( ) );
+                }
+            } );
+
+
+
             sendToP2Pcoordinator( new Message( MessageType.STATUS, MessageReceiver.getUserSelf( ),
                                                null ) );
 
@@ -333,7 +313,7 @@ public class ChatController
 
             onlineUsers.forEach( user1 -> {
                 if ( user1.getName( ).equals( user.getName( ) ) ){
-                    user1.setStatus( user.getStatus( ) );
+                    user1.updateStatus( user.getStatus( ) );
                 }
             } );
 
