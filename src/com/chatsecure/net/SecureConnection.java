@@ -111,6 +111,7 @@ public class SecureConnection
             SecureRandom random = new SecureRandom( );
 
             random.nextBytes( SHARED_KEY );
+            SHARED_KEY[0] = (byte) Math.abs(SHARED_KEY[0]);
 
             Long myID = Thread.currentThread( ).getId( );
             coordinator = new Thread( new P2Pcoordinator( myID ) );
