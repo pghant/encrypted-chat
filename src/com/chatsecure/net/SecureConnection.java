@@ -1,5 +1,6 @@
 package com.chatsecure.net;
 
+import com.chatsecure.aes.CTR;
 import com.chatsecure.client.Message;
 import com.chatsecure.client.MessageType;
 import com.chatsecure.client.Status;
@@ -302,22 +303,15 @@ public class SecureConnection
             to_byte_stream.writeObject( msg );
             msg_bytes = byte_stream.toByteArray( );
 
-
-//            try{
-//                CTR.setkey( SHARED_KEY );
-//                encrypted_msg_bytes = CTR.encryptMessage( msg_bytes );
-//            } catch ( Exception e ){
-//                // TODO Auto-generated catch block
-//                e.printStackTrace( );
-//            }
-
-            //TEST CALL UNTIL AES FIXED
-            encrypted_msg_bytes = msg_bytes;
-
-
+            try{
+                CTR.setkey( SHARED_KEY );
+                encrypted_msg_bytes = CTR.encryptMessage( msg_bytes );
+            } catch ( Exception e ){
+                // TODO Auto-generated catch block
+                e.printStackTrace( );
+            }
 
             assert encrypted_msg_bytes != null : "CTR.encryptMessage returned null";
-
             oos.write( encrypted_msg_bytes );
 
         } catch ( IOException e ){
@@ -340,26 +334,22 @@ public class SecureConnection
 
         byte[] decrypted_msg_bytes = null;
 
+        byte[] received_msg_bytes = new byte[ 8192 ];
+        int num = iis.read( received_msg_bytes, 0, 8192 );
+        if (num == -1)
+            return null;
+        byte[] encrypted_msg_bytes = new byte[num];
+        System.arraycopy(received_msg_bytes, 0, encrypted_msg_bytes, 0, num);
 
-        byte[] encrypted_msg_bytes = new byte[ 8192 ];
-        int num;
-        num = iis.read( encrypted_msg_bytes, 0, 8192 );
-
-
-//        try{
-//            CTR.setkey( SHARED_KEY );
-//            decrypted_msg_bytes = CTR.decryptMessage( encrypted_msg_bytes );
-//        } catch ( Exception e1 ){
-//            // TODO Auto-generated catch block
-//            e1.printStackTrace( );
-//        }
-
-
-        //TESTING UNTIL AES FIXED
-        decrypted_msg_bytes = encrypted_msg_bytes;
+        try{
+            CTR.setkey( SHARED_KEY );
+            decrypted_msg_bytes = CTR.decryptMessage( encrypted_msg_bytes );
+        } catch ( Exception e1 ){
+            // TODO Auto-generated catch block
+            e1.printStackTrace( );
+        }
 
         assert decrypted_msg_bytes != null : "CTR.decrypt returned null";
-
 
         ByteArrayInputStream byte_stream_out = new ByteArrayInputStream( decrypted_msg_bytes );
         ObjectInputStream from_byte_stream = new ObjectInputStream( byte_stream_out );
