@@ -217,10 +217,10 @@ public class ChatController
                 removeUserFromChat( msg.getUser( ) );
                 break;
             case ADDUSER:
-                addNewUserToChat( msg.getUser( ) );
+                addNewUserToChat( msg );
                 break;
             case STATUS:
-                updateOnlineUsersStatusInChat( msg.getUser( ) );
+                updateOnlineUsersStatusInChat( msg );
                 break;
         }
 
@@ -250,10 +250,11 @@ public class ChatController
     }
 
     public void addSelfUserToChat( User user ){
-        Platform.runLater( ( ) -> addNewUserToChat( user ) );
-    }
-    private void addNewUserToChat( User user ){
         Platform.runLater( ( ) -> onlineUsers.add( user ) );
+    }
+
+    private void addNewUserToChat( Message msg ){
+        Platform.runLater( ( ) -> syncrhonizeOnlineUsersList( msg.getUserList( ) ) );
     }
 
     private void removeUserFromChat( User user ){
@@ -308,14 +309,16 @@ public class ChatController
 
     }
 
-    private void updateOnlineUsersStatusInChat( User user ){
+    private void updateOnlineUsersStatusInChat( Message msg ){
         Platform.runLater( ( ) -> {
 
-            onlineUsers.forEach( user1 -> {
-                if ( user1.getName( ).equals( user.getName( ) ) ){
-                    user1.updateStatus( user.getStatus( ) );
-                }
-            } );
+
+            syncrhonizeOnlineUsersList( msg.getUserList( ) );
+//            onlineUsers.forEach( user1 -> {
+//                if ( user1.getName( ).equals( user.getName( ) ) ){
+//                    user1.updateStatus( user.getStatus( ) );
+//                }
+//            } );
 
         } );
 

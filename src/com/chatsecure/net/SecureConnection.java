@@ -50,7 +50,7 @@ public class SecureConnection
     //if you are P2Pcoordinator then you generate this key and distribute to all clients via RSA;
     //else this key is set in call doHandShake
 
-    private static byte[] SHARED_KEY = new byte[ 16 ];
+    private static byte[] SHARED_KEY = new byte[ 16 ];//{23,65,33,2,7,2,1,56,23,66,33,83,14,2,61,84};
 
 
     public static SecureConnection getConnection( ){
@@ -116,7 +116,7 @@ public class SecureConnection
             random.nextBytes( SHARED_KEY );
             SHARED_KEY[0] = (byte) Math.abs(SHARED_KEY[0]);
 
-            Long myID = Thread.currentThread( ).getId( );
+            Thread.currentThread( ).getId( );
             coordinator = new Thread( new P2Pcoordinator( ) );
             coordinator.setDaemon( true );
             coordinator.start( );
@@ -258,8 +258,6 @@ public class SecureConnection
             System.out.println( "RSA COMPUTER SHARED KEY: " + Arrays.toString( shared_secret ) );
 
 
-
-
         } catch ( IOException | ClassNotFoundException e ){
             Logger.getLogger( SecureConnection.class.toString( ) ).log( Level.SEVERE,
 
@@ -308,7 +306,7 @@ public class SecureConnection
 
             oos.write( encrypted_msg_bytes );
 
-            System.out.println( "In writeMessage: " + msg.getUser( ) );
+            System.out.println( "In writeMessage: " + msg );
             System.out.flush( );
 
         } catch ( IOException e ){
@@ -357,7 +355,7 @@ public class SecureConnection
 
         Message msg = (Message) from_byte_stream.readObject( );
 
-        System.out.println( "readMessage_ user: " + msg.getUser( ) );
+        System.out.println( "readMessage_ : " + msg );
         System.out.flush( );
 
         return msg;
@@ -468,41 +466,68 @@ public class SecureConnection
                 // !online_users.get( ID ).getName().equals( finalMsg.getUser( ).getName() )
 
                 //broadcast to everyone
-                final Message finalMsg = msg;
+                // final Message finalMsg = msg;
 
                 System.out.println( "INSIDE BROADCAST--MSG: " + msg );
                 System.out.flush( );
                 System.out.println( "INSIDE BROADCAST--host_connections users: " + host_connections.keySet( ) );
                 System.out.flush( );
-                host_connections.forEach( ( ID, outStream ) -> {
-                    if ( finalMsg != null ){
+
+                for ( User u : host_connections.keySet( ) ){
+
+                    System.out.println( "BROADCASTING TO: " + u );
+                    System.out.flush( );
 
 
-                        System.out.println( "BROADCASTING TO: " + finalMsg.getUser( ) );
-                        System.out.flush( );
+                    try{
+                        writeMessage( msg, host_connections.get( u ) );
+                    } catch ( IOException e ){
+                        Logger.getLogger( this.getClass( ).toString( ) ).log( Level.SEVERE,
+                                                                              "A broadcast message failed to send",
+                                                                              e );
 
-                        try{
-                            writeMessage( finalMsg, outStream );
-                        } catch ( IOException e ){
-                            Logger.getLogger( this.getClass( ).toString( ) ).log( Level.SEVERE,
-                                                                                  "A broadcast message failed to send",
-                                                                                  e );
+                        //don't kill entire program here because if socket write
+                        //fails it may just be that users socket closed unexpectedly
+                        //so just ignore fail and broadcast to everyone else
 
-                            //don't kill entire program here because if socket write
-                            //fails it may just be that users socket closed unexpectedly
-                            //so just ignore fail and broadcast to everyone else
-
-                        }
-                        if ( finalMsg.getType( ) == MessageType.REMOVEUSER ){
-                            internalCloseConnection( ID );
-                        }
-
-                    } else{
-                        Logger.getLogger( this.getClass( ).toString( ) ).log( Level.WARNING,
-                                                                              "Message extracted from outgoing message" +
-                                                                              "queue was null" );
                     }
-                } );
+                    if ( msg.getType( ) == MessageType.REMOVEUSER ){
+                        internalCloseConnection( u );
+                    }
+
+
+                }
+
+
+//                host_connections.forEach( ( ID, outStream ) -> {
+//                    if ( finalMsg != null ){
+//
+//
+//                        System.out.println( "BROADCASTING TO: " + finalMsg.getUser( ) );
+//                        System.out.flush( );
+//
+//                        try{
+//                            writeMessage( finalMsg, outStream );
+//                        } catch ( IOException e ){
+//                            Logger.getLogger( this.getClass( ).toString( ) ).log( Level.SEVERE,
+//                                                                                  "A broadcast message failed to send",
+//                                                                                  e );
+//
+//                            //don't kill entire program here because if socket write
+//                            //fails it may just be that users socket closed unexpectedly
+//                            //so just ignore fail and broadcast to everyone else
+//
+//                        }
+//                        if ( finalMsg.getType( ) == MessageType.REMOVEUSER ){
+//                            internalCloseConnection( ID );
+//                        }
+//
+//                    } else{
+//                        Logger.getLogger( this.getClass( ).toString( ) ).log( Level.WARNING,
+//                                                                              "Message extracted from outgoing message" +
+//                                                                              "queue was null" );
+//                    }
+//                } );
 
 
             }
@@ -663,6 +688,9 @@ public class SecureConnection
                             oos.write( msg_bytes, 0, msg_bytes.length );
 
 
+                            //sleep a little to make sure sharedKey is decrypted and initialized
+                            //before putting message on queue
+                            Thread.sleep( 2500 );
                             outgoingMessages.put( msg.setType( MessageType.ADDUSER )
                                                           .setUserList( new ArrayList<>( online_users.values( ) ) )
                                                           .setPublicKey( null ) );
