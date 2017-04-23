@@ -75,7 +75,7 @@ public class MessageReceiver implements Runnable
             throw e;
         }
 
-        chatController.addSelfUserToChat( userSelf );
+        //chatController.addSelfUserToChat( userSelf );
 
     }
 
@@ -92,12 +92,22 @@ public class MessageReceiver implements Runnable
 
             try{
 
-                incoming_msg = secureCon.readMessage( );
+                while ( secureCon.stream_from_P2Pcoord.available( ) == 0 ){
+                    try{
+                        Thread.sleep( 300 );
+                    } catch ( InterruptedException e ){
+                        e.printStackTrace( );
+                    }
+                    continue;
+                }
+
+
+                incoming_msg = secureCon.waitForInitialization( ).readMessage( );
 
                 if ( incoming_msg == null ){
-                    Logger.getLogger( MessageReceiver.class.toString( ) ).log( Level.WARNING,
+                    Logger.getLogger( MessageReceiver.class.toString( ) ).log( Level.SEVERE,
                                                                                "MessageRcvr--readMessage returned null" );
-                    continue;
+                    System.exit( 0 );
                 }
 
 
@@ -116,7 +126,7 @@ public class MessageReceiver implements Runnable
                 break;
             }
 
-            assert incoming_msg != null;
+
             chatController.updateChatRoomState( incoming_msg.getType( ), incoming_msg );
 
 
