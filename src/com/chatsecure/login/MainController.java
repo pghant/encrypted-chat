@@ -1,11 +1,7 @@
 package com.chatsecure.login;
 
 
-import java.io.IOException;
-
-import com.chatsecure.client.ChatController;
 import com.chatsecure.client.MessageReceiver;
-
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -17,6 +13,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
+
+import java.io.IOException;
 
 /**
  * @author sriramvaradharajan
@@ -42,7 +40,8 @@ private TextField hostAddress;
 
 @FXML
 private Button btnSignIn;
-
+    private MessageReceiver rcvr;
+    private Thread rcvr_thread;
 public void signin(ActionEvent event){
 	if(txtUserName.getText().equals("user") && txtPassword.getText().equals("password")){
 		lblStatus.setText("Login success");
@@ -55,9 +54,14 @@ public void signin(ActionEvent event){
 		    
 		    try {
 		    	if(cboxp2pcoordinator.isSelected()){
-		    		new MessageReceiver( 5320, loader.getController(),"user");
-		    	}else{
-		    		new MessageReceiver("localhost", 0, loader.getController(),"user");
+                    rcvr_thread = new Thread( rcvr = new MessageReceiver( 5320, loader.getController( ), "user" ) );
+                    rcvr_thread.start( );
+                }else{
+                    rcvr_thread = new Thread(
+                            rcvr = new MessageReceiver( hostAddress.getText( ), 5320, loader.getController( ),
+                                                        "user" ) );
+                    rcvr_thread.start( );
+
 		    	}
 			} catch (ClassNotFoundException e) {
 				e.printStackTrace();
