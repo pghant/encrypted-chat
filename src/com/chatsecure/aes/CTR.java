@@ -58,6 +58,15 @@ public class CTR {
 	    System.arraycopy(msg_, 0, plainText, block_size, msg_.length);
 	    //create hash	    
 	    hash = SHA512.hash(msg_);
+	    System.out.println("Encrypt Message: IV ");
+	    System.out.print("    ");
+	    System.out.println(Arrays.toString(iv));
+	    System.out.println("Encrypt Message: msg ");
+	    System.out.print("    ");
+	    System.out.println(Arrays.toString(msg_));
+	    System.out.println("Encrypt Message: Hash ");
+	    System.out.print("    ");
+	    System.out.println(Arrays.toString(hash));
 	    //add HASH to end of message
 	    System.arraycopy(hash, 0, plainText, plainText.length-hash_size, hash_size);
 	    
@@ -76,6 +85,12 @@ public class CTR {
 	    ByteBuffer bb = ByteBuffer.allocate(Integer.SIZE/8);
 	    //get the initial IV
 	    System.arraycopy( encMsg_, 0, iv, 0, block_size );
+	    System.out.println("Decrypt Message: Received Message");
+	    System.out.print("    ");
+	    System.out.println(Arrays.toString(encMsg_));
+	    System.out.println("Decrypt Message: IV ");
+	    System.out.print("    ");
+	    System.out.println(Arrays.toString(iv));
 	    //decrypt the length and message id
 	    //encrypt XOR
 	    plainText = xorSection(encMsg_, block_size);
@@ -100,7 +115,17 @@ public class CTR {
 	    	System.out.println("Invalid Hash");
 	    	return null;
 	    }
-	   
+	    
+	    System.out.println("Decrypt Message: msg ");
+	    System.out.print("    ");
+	    System.out.println(Arrays.toString(msg));
+	    System.out.println("Decrypt Message: Orig Hash ");
+	    System.out.print("    ");
+	    System.out.println(Arrays.toString(origHash));
+	    System.out.println("Decrypt Message: New Hash ");
+	    System.out.print("    ");
+	    System.out.println(Arrays.toString(newHash));
+	    
 	    return msg;
 	}
 	private static byte[]  xorSection(byte[] buff, int offset) throws Exception{
@@ -145,3 +170,4 @@ public class CTR {
 	}
 
 }
+
