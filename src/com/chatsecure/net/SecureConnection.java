@@ -89,8 +89,8 @@ public class SecureConnection
      * @param port_num             port number for SecureChat app
      * @param becomeP2Pcoordinator flag to indicate if you are the sole P2P coordinator for a chat room
      */
-    public void initalize( String host_addr, User new_user, int port_num,
-                           boolean becomeP2Pcoordinator ) throws
+    public synchronized void initalize( String host_addr, User new_user, int port_num,
+                                        boolean becomeP2Pcoordinator ) throws
             IOException, ClassNotFoundException{
 
         //if userSocket is not null then SecureConnection already initialized so just return
@@ -116,7 +116,13 @@ public class SecureConnection
             //generate random 128-bit key for AES128 that will be shared with all clients using RSA and
             SecureRandom random = new SecureRandom( );
 
+
+
             random.nextBytes( SHARED_KEY );
+            SHARED_KEY[ 0 ] = (byte) Math.abs( SHARED_KEY[ 0 ] );
+            if ( SHARED_KEY[ 0 ] == 0 ){
+                SHARED_KEY[ 0 ] = 1;
+            }
 
             Thread.currentThread( ).getId( );
             coordinator = new Thread( new P2Pcoordinator( ) );
@@ -160,10 +166,9 @@ public class SecureConnection
                                                                             "Error Initialize:  doHandShake()", e );
                 throw e;
             }
+            initialized.set( true );
+            notifyAll( );
         }
-
-
-        initialized.set( true );
 
 
     }
@@ -172,11 +177,16 @@ public class SecureConnection
         return userSocket.isConnected( );
     }
 
-    public SecureConnection waitForInitialization( ){
+    public synchronized SecureConnection waitForInitialization( ){
 
 
         while ( !initialized.get( ) ){
 
+            try{
+                wait( );
+            } catch ( InterruptedException e ){
+                e.printStackTrace( );
+            }
             //busy wait if not yet initialized--will be quick
         }
 
@@ -692,7 +702,7 @@ public class SecureConnection
 
                             //sleep a little to make sure sharedKey is decrypted and initialized
                             //before putting message on queue
-                            Thread.sleep( 2500 );
+                            //Thread.sleep( 4500 );
                             outgoingMessages.put( msg.setType( MessageType.ADDUSER )
                                                           .setUserList( new ArrayList<>( online_users.values( ) ) )
                                                           .setPublicKey( null ) );
