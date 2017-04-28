@@ -8,4 +8,10 @@ All communication is protected by AES-128 encryption in CTR mode with a randomly
 The program was developed in Java to ensure maximum compatibility among different platforms. The UI was created using JavaFX. All security algorithms were implemented from scratch.
 
 ## How to Run
-In the encrypted_chat directory, run the command `java -jar encrypted_chat.jar`.
+1. Run the command `java -jar encrypted_chat/encrypted_chat.jar`. Alternatively, the code can be opened in a Java IDE and can be compiled and run with the com.chatsecure.login.Main.java as the starting class.
+
+2. On the login page, login with any of the following user names: jpc, ua, pg, ca, or sv. The password is “password”. Choose to be the P2P coordinator. Note the IP address of the coordinator.
+
+3. Start a new instance of the app and login with any of the above logins. Choose to connect to the IP of the coordinator.
+
+4. Both chat clients should now be open to the same chat view. Messages typed in either will appear on both.
