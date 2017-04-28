@@ -112,29 +112,23 @@ public class SecureConnection
 
             //generate random 128-bit key for AES128 that will be shared with all clients using RSA and
             SecureRandom random = new SecureRandom( );
-
             random.nextBytes( SHARED_KEY );
             SHARED_KEY[0] = (byte) Math.abs(SHARED_KEY[0]);
-            if (SHARED_KEY[0] == 0)
-                SHARED_KEY[0] = 1;
+            if (SHARED_KEY[0] == 0) SHARED_KEY[0] = 1;
 
             Thread.currentThread( ).getId( );
             coordinator = new Thread( new P2Pcoordinator( ) );
             coordinator.setDaemon( true );
             coordinator.start( );
 
-
             userSocket = new Socket( hostAddr, portNum );
             //start coordinator then connect where hostAddr is localAddr so
             //coordinator will handle connection same way it would handle
             //connection from remote host.
-
             stream_to_P2Pcoord = userSocket.getOutputStream( );
             stream_from_P2Pcoord = userSocket.getInputStream( );
 
-
-            Message m = new Message( MessageType.SELFCONNECTION,
-                                     userSelf, null );
+            Message m = new Message( MessageType.SELFCONNECTION, userSelf, null );
 
             to_byte_stream.writeObject( m );
             msg_bytes = byte_stream_in.toByteArray( );
@@ -142,7 +136,6 @@ public class SecureConnection
             System.out.println( "INIT MSG BYTES LENGTH: " + msg_bytes.length );
 
             stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
-
 
         } else{
 
@@ -215,19 +208,14 @@ public class SecureConnection
             ObjectOutputStream to_byte_stream = new ObjectOutputStream( byte_stream_in );
 
             byte[] msg_bytes;
-            Message m = new Message( MessageType.HANDSHAKE,
-                                     userSelf,
-                                     null )
-                    .setPublicKey( RSAenc.getPublicKey( ) );
+            Message m = new Message( MessageType.HANDSHAKE, userSelf, null ).setPublicKey( RSAenc.getPublicKey( ) );
             to_byte_stream.writeObject( m );
             msg_bytes = byte_stream_in.toByteArray( );
-
 
             System.out.println( "Handshake message: " + m.toString( ) );
             System.out.println( "Handshake message length to send: " + msg_bytes.length );
 
             stream_to_P2Pcoord.write( msg_bytes, 0, msg_bytes.length );
-
 
             byte[] received_msg_bytes = new byte[ 8192 * 4 ];
             int num = stream_from_P2Pcoord.read( received_msg_bytes, 0, received_msg_bytes.length );
@@ -238,7 +226,6 @@ public class SecureConnection
             byte[] in_buff = new byte[ num ];
             System.arraycopy( received_msg_bytes, 0, in_buff, 0, num );
 
-
             Message returnMsg;
 
             ByteArrayInputStream byte_stream_out = new ByteArrayInputStream( in_buff );
@@ -247,14 +234,10 @@ public class SecureConnection
             returnMsg = (Message) from_byte_stream.readObject( );
             System.out.println( "Return message with shared secret: " + returnMsg );
 
-
-            assert returnMsg.getType( ) ==
-                   MessageType.HANDSHAKE : "doHandShake got back wrong message type from P2P coordinator";
+            assert returnMsg.getType( ) == MessageType.HANDSHAKE : "doHandShake got back wrong message type from P2P coordinator";
 
             //here the com.chatsecure.client is using his private RSA key to decrypt this message--that key should exist
             //within RSA object
-
-
             shared_secret = RSAenc.decrypt( returnMsg.getRSAresult( ) );
 
             System.out.println( "RSA COMPUTER SHARED KEY: " + Arrays.toString( shared_secret ) );
@@ -299,12 +282,10 @@ public class SecureConnection
                 CTR.setkey( SHARED_KEY );
                 encrypted_msg_bytes = CTR.encryptMessage( msg_bytes );
             } catch ( Exception e ){
-                // TODO Auto-generated catch block
                 e.printStackTrace( );
             }
 
             assert encrypted_msg_bytes != null : "CTR.encryptMessage returned null";
-
 
             oos.write( encrypted_msg_bytes );
 
