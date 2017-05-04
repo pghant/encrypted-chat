@@ -15,6 +15,8 @@ import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author sriramvaradharajan
@@ -43,8 +45,18 @@ public class MainController
     private MessageReceiver rcvr;
     private Thread rcvr_thread;
 
+    static List<String> users = new ArrayList<String>( );
+
+    static{
+        users.add( "jpc" );
+        users.add( "sv" );
+        users.add( "cs" );
+        users.add( "ua" );
+        users.add( "pg" );
+    }
+
     public void signin( ActionEvent event ){
-        if ( txtUserName.getText( ).equals( "user" ) && txtPassword.getText( ).equals( "password" ) ){
+        if ( users.contains( txtUserName.getText( ) ) && txtPassword.getText( ).equals( "password" ) ){
             lblStatus.setText( "Login success" );
             try{
                 FXMLLoader loader = new FXMLLoader(
@@ -57,20 +69,21 @@ public class MainController
                 try{
                     if ( cboxp2pcoordinator.isSelected( ) ){
                         rcvr_thread = new Thread(
-                                rcvr = new MessageReceiver( 5320, loader.getController( ), "JPC" ) );
+                                rcvr = new MessageReceiver( 5320, loader.getController( ), txtUserName.getText( ) ) );
                         rcvr_thread.setName( "MSG_RCVR_4_P2P" );
                         rcvr_thread.start( );
                     } else{
                         rcvr_thread = new Thread(
                                 rcvr = new MessageReceiver( hostAddress.getText( ), 5320, loader.getController( ),
-                                                            "TBRADY" ) );
+                                                            txtUserName.getText( ) ) );
                         rcvr_thread.setName( "MSG_RCVR_4_USER" );
                         rcvr_thread.start( );
 
                     }
-                } catch ( ClassNotFoundException e ){
+                } catch ( Exception e ){
                     e.printStackTrace( );
                 }
+                lblStatus.setText( "Login Succeeded" );
                 stage.show( );
             } catch ( IOException e ){
                 e.printStackTrace( );
@@ -91,3 +104,5 @@ public class MainController
 
     }
 }
+
+

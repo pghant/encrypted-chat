@@ -7,26 +7,28 @@ import java.util.Arrays;
 import java.util.Random;
 
 public class CTR {
-	private static int block_size = 16;
-	private static int hash_size = 64;
-	private static byte[] iv = new byte[block_size]; 
-	private static byte[] aes_key;
-	//save the key that will be used to encrypt the message
-	public static boolean setkey(byte[] key_) throws Exception{
-		if(key_.length == 16 || key_.length == 32){
+    private int block_size = 16;
+    private int hash_size = 64;
+    private byte[] iv = new byte[ block_size ];
+    private byte[] aes_key;
+
+    public CTR( final byte[] aes_key ) throws Exception{
+        setkey( aes_key );
+    }
+
+    //save the key that will be used to encrypt the message
+    public boolean setkey( byte[] key_ ) throws Exception{
+        if(key_.length == 16 || key_.length == 32){
 			aes_key = new byte[key_.length];
 
-			if(!ECB.setKey(key_)){
-					return false;
-			}
-			return true;
-		}else{
-			return false;
+            return ECB.setKey( key_ );
+        } else{
+            return false;
 		}
 	}
-	
-	public static byte[] encryptMessage(byte[] msg_) throws Exception{
-		//used to generate the random number for the IV, this is not cryptographically safe
+
+    public byte[] encryptMessage( byte[] msg_ ) throws Exception{
+        //used to generate the random number for the IV, this is not cryptographically safe
 	    Random random = new Random();
 	    byte[] hash = new byte[hash_size];
 	    byte[] encIV;
@@ -68,8 +70,9 @@ public class CTR {
 	    
 		return encMsg;
 	}
-	public static byte[] decryptMessage(byte[] encMsg_) throws Exception{
-	    byte [] newHash = new byte[hash_size];
+
+    public byte[] decryptMessage( byte[] encMsg_ ) throws Exception{
+        byte [] newHash = new byte[hash_size];
 	    byte [] origHash = new byte[hash_size];
 	    int msgLength;
 	    byte[] plainText = new byte[encMsg_.length-2*block_size];
@@ -103,8 +106,9 @@ public class CTR {
 	   
 	    return msg;
 	}
-	private static byte[]  xorSection(byte[] buff, int offset) throws Exception{
-	    byte[] xorText = new byte[buff.length];
+
+    private byte[] xorSection( byte[] buff, int offset ) throws Exception{
+        byte[] xorText = new byte[buff.length];
 	    //start encrypting the IV and xoring it with the buffer
 	    updateIV(); 
 		//loop through the buffer and decrypt/encrypt every 16 byte block
@@ -115,8 +119,8 @@ public class CTR {
 	    return xorText;
 	}
 
-	private static void updateIV(){		
-		ByteBuffer bb = ByteBuffer.allocate(4);		
+    private void updateIV( ){
+        ByteBuffer bb = ByteBuffer.allocate(4);
 		int currIV;
 		//copy the iv into the bytebuffer, to convert it to an int
 		System.arraycopy( iv, 12, bb.array(), 0, bb.array().length );
@@ -129,8 +133,9 @@ public class CTR {
 		//copy the new IV to the end of the global IV, remember the first 12 bytes is random so every message should have a unique IV
 		System.arraycopy( bb.array(), 0, iv, 12, bb.array().length );
 	}
-	private static byte[] xorBuff( byte[] buff, int offset) throws Exception{
-		byte[] xorBuff = new byte[block_size];
+
+    private byte[] xorBuff( byte[] buff, int offset ) throws Exception{
+        byte[] xorBuff = new byte[block_size];
 		byte[] cipherIV = new byte[iv.length];
 		int i = 0;
 		//encrypt the 16 byte block IV

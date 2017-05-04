@@ -188,7 +188,7 @@ public class ChatController
 
     public void sendToP2Pcoordinator( Message msg ) throws IOException{
 
-        System.out.println( "chatcontroller: sendToP2Pcoordinator " );
+
 
         Thread writerThread = new Thread( ( ) -> {
             try{
@@ -214,6 +214,8 @@ public class ChatController
                 addMessageToChat( msg );
                 break;
             case REMOVEUSER:
+                addMessageToChat( new Message( MessageType.USER, msg.getUser( ), "Signing Off" ).setUserList(
+                        msg.getUserList( ) ) );
                 removeUserFromChat( msg.getUser( ) );
                 break;
             case ADDUSER:

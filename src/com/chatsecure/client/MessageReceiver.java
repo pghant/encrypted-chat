@@ -27,7 +27,7 @@ public class MessageReceiver implements Runnable
      */
     public MessageReceiver( int portNum,
                             final ChatController chatController,
-                            final String username ) throws IOException, ClassNotFoundException{
+                            final String username ) throws Exception{
 
 
         this.chatController = chatController;
@@ -40,7 +40,7 @@ public class MessageReceiver implements Runnable
 
         try{
             secureCon.initalize( userSelf, portNum, true );
-        } catch ( IOException | ClassNotFoundException e ){
+        } catch ( Exception e ){
             Logger.getLogger( MessageReceiver.class.toString( ) ).log( Level.SEVERE,
                                                                        "Error in MessageReceiver Ctor",
                                                                         e );
@@ -55,7 +55,7 @@ public class MessageReceiver implements Runnable
 
     public MessageReceiver( String hostName, int portNum,
                             final ChatController chatController,
-                            final String username ) throws IOException, ClassNotFoundException{
+                            final String username ) throws Exception{
 
 
         this.chatController = chatController;
@@ -68,7 +68,7 @@ public class MessageReceiver implements Runnable
         this.secureCon = SecureConnection.getConnection( );
         try{
             secureCon.initalize( hostName, userSelf, portNum, false );
-        } catch ( IOException | ClassNotFoundException e ){
+        } catch ( Exception e ){
             Logger.getLogger( MessageReceiver.class.toString( ) ).log( Level.SEVERE,
                                                                        "Error in MessageReceiver Ctor",
                                                                        e );
@@ -92,14 +92,14 @@ public class MessageReceiver implements Runnable
 
             try{
 
-                while ( secureCon.stream_from_P2Pcoord.available( ) == 0 ){
-                    try{
-                        Thread.sleep( 300 );
-                    } catch ( InterruptedException e ){
-                        e.printStackTrace( );
-                    }
-                    continue;
-                }
+//                while ( secureCon.stream_from_P2Pcoord.available( ) == 0 ){
+//                    try{
+//                        Thread.sleep( 300 );
+//                    } catch ( InterruptedException e ){
+//                        e.printStackTrace( );
+//                    }
+//                    continue;
+//                }
 
 
                 incoming_msg = secureCon.waitForInitialization( ).readMessage( );
